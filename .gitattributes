@@ -1,0 +1,15 @@
+# Ensure consistent line endings across platforms
+* text=auto eol=lf
+
+# Explicitly enforce LF for code and config
+*.py text eol=lf
+*.ipynb text eol=lf
+*.tf text eol=lf
+*.md text eol=lf
+*.sh text eol=lf
+
+# Allow binary files untouched
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.parquet binary
