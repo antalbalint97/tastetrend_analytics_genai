@@ -11,6 +11,7 @@ __pycache__/
 .eggs/
 dist/
 build/
+python/
 pip-wheel-metadata/
 *.log
 
@@ -44,6 +45,13 @@ crash.log
 *.swo
 
 # ----------------
+# Local configs / test payloads
+# ----------------
+payload.json
+response.json
+*.local.json
+
+# ----------------
 # Data
 # ----------------
 data/
@@ -59,3 +67,5 @@ data/
 package/
 lambda.zip
 *.tar.gz
+*.zip
+tmp/

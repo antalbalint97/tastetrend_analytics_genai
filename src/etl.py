@@ -19,6 +19,7 @@ Usage (AWS Lambda):
 from __future__ import annotations
 
 import re
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
@@ -26,19 +27,23 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from src.utils.logger import get_logger
-
-# Pandas display tweaks
-pd.set_option("display.max_columns", 100)
-pd.set_option("display.width", 160)
+from utils.logger import get_logger
 
 # Centralized logger
 logger = get_logger(__name__)
 
 # Project paths
 PROJECT_ROOT = Path.cwd().parents[0] if Path.cwd().name == "notebooks" else Path.cwd()
-DATA_RAW = PROJECT_ROOT / "data" / "raw"
-assert DATA_RAW.exists(), f"Raw data folder not found: {DATA_RAW}"
+
+# In AWS Lambda, use /tmp/raw as working directory (safe + writable)
+# In local dev, fall back to PROJECT_ROOT/data/raw
+if Path("/tmp").exists():
+    DATA_RAW = Path("/tmp/raw")
+    DATA_RAW.mkdir(exist_ok=True)
+else:
+    DATA_RAW = PROJECT_ROOT / "data" / "raw"
+    DATA_RAW.mkdir(parents=True, exist_ok=True)
+
 logger.info("Project root: %s", PROJECT_ROOT)
 logger.info("Raw data dir: %s", DATA_RAW)
 
@@ -326,9 +331,11 @@ if __name__ == "__main__":
     logger.info("Categorical report preview:\n%s", cats.head())
     logger.info("Missingness summary:\n%s", missing_pct.head())
 
-    # Save snapshot
-    SNAP_PATH = PROJECT_ROOT / "data" / "processed_exploration.parquet"
-    cols_to_save = [c for c in STANDARD_COLS if c != "rating_scale"] + ["review_length", "mentions_wait"]
-    cols_to_save = [c for c in cols_to_save if c in reviews.columns]
-    reviews[cols_to_save].to_parquet(SNAP_PATH, index=False)
-    logger.info(f"Saved exploration snapshot to: {SNAP_PATH}")
+    # Only save snapshot if not running inside AWS Lambda
+    if not os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        SNAP_PATH = PROJECT_ROOT / "data" / "processed_exploration.parquet"
+        cols_to_save = [c for c in STANDARD_COLS if c != "rating_scale"] + ["review_length"]
+        cols_to_save = [c for c in cols_to_save if c in reviews.columns]
+        reviews[cols_to_save].to_parquet(SNAP_PATH, index=False)
+        logger.info(f"Saved exploration snapshot to: {SNAP_PATH}")
+

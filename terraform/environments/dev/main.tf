@@ -20,7 +20,6 @@ locals {
   lambda_name = "${local.prefix}-etl"
   zip_bucket = "${local.prefix}-artifacts-${local.account_id}"
   zip_key = "lambda/etl-${var.lambda_version}.zip"
-  zip_path = "../../build/etl-${var.lambda_version}.zip"
 }
 
 # Buckets
@@ -48,19 +47,18 @@ module "iam" {
 
 # Lambda from ZIP in artifacts bucket
 module "lambda" {
-  source = "../../modules/lambda"
+  source        = "../../modules/lambda"
   function_name = local.lambda_name
-  role_arn = module.iam.role_arn
-  zip_bucket = local.zip_bucket
-  zip_key = local.zip_key
-  zip_path = local.zip_path
+  role_arn      = module.iam.role_arn
+  zip_bucket    = local.zip_bucket
+  zip_key       = local.zip_key
+  lambda_version = var.lambda_version
 
   env = {
-    RAW_BUCKET = module.raw.name
+    RAW_BUCKET       = module.raw.name
     PROCESSED_BUCKET = module.processed.name
   }
-  
-  # Make sure artifacts bucket exists before upload
+
   depends_on = [module.artifacts]
 }
 

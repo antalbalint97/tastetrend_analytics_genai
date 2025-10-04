@@ -1,3 +1,7 @@
+resource "aws_iam_user" "me" {
+  name = "antalb97"
+}
+
 variable "lambda_name" {
   type = string
 }
@@ -22,6 +26,22 @@ data "aws_iam_policy_document" "assume" {
 resource "aws_iam_role" "lambda" {
   name = "${var.lambda_name}-role"
   assume_role_policy = data.aws_iam_policy_document.assume.json
+}
+
+resource "aws_iam_user_policy" "allow_layer_access" {
+  name = "allow-layer-access"
+  user = "antalb97"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect   = "Allow"
+        Action   = ["lambda:GetLayerVersion"]
+        Resource = "arn:aws:lambda:eu-central-1:336392948345:layer:AWSDataWrangler-Python311:*"
+      }
+    ]
+  })
 }
 
 # CloudWatch logs
