@@ -120,11 +120,47 @@ AGE_RANGE_MAP = {
 
 ---
 
+## Duplicate Handling Strategy
+
+During exploration we identified duplicate review IDs that were assigned to different customers or contained slightly varied review texts.
+This indicated that relying on review_id alone was not sufficient for deduplication.
+
+### Strategy implemented:
+
+#### Primary deduplication
+
+Drop exact duplicates across:
+
+`["review_id", "customer_name", "restaurant_name", "review_date"]`
+
+#### Conflict detection
+
+If the same review_id appears with different customer_name or review_text, these rows are flagged as conflicts.
+Conflicts are not automatically dropped — they are logged and surfaced in the validation JSON under:
+
+`"checks": {
+    "conflicting_ids": <count>
+}`
+
+#### Validation reporting
+
+- Deduplication conflicts do not fail the pipeline.
+- Instead, they raise a warning (status = "warn") so downstream teams can investigate without data loss.
+
+### Outcome
+
+- Ensures uniqueness at the pair level (review_id + customer_name).
+- Maintains visibility into suspicious reuse of identifiers.
+- Balances data trustworthiness with safeguards against accidental data loss in cases where different customers share the same review identifier.
+
+---
+
 ## Transformation Requirements
 - **Standardize formats and scales**: ✅ Completed  
 - **Fill missing review text**: ✅ Completed  
 - **Normalize categorical variables**: ✅ Completed  
-- **Outlier handling (cap/log/clip)**: ✅ Completed  
+- **Outlier handling (cap/log/clip)**: ✅ Completed
+- **Deduplication strategy implemented**: ✅ Completed  
 
 ---
 

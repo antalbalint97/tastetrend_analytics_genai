@@ -1,0 +1,333 @@
+{
+  "validation_id": "5b023ce1-57d0-4e85-bc27-637c41f7dcf0",
+  "timestamp": "2025-10-04T14:36:03.000664",
+  "sources": [
+    {
+      "source": "tastetrend_downtown_reviews.csv",
+      "row_count_processed": 614,
+      "row_count_raw": 614,
+      "checks": {
+        "missing_columns": [],
+        "duplicate_ids": 298,
+        "row_count_mismatch": 0,
+        "invalid_ratings": 0,
+        "extreme_tips": 0,
+        "null_review_text_pct": "31.1%",
+        "rows_dropped_dedup": 0,
+        "conflicting_ids": 298
+      },
+      "warnings": {
+        "missing_values": {
+          "review_text": "31.1%",
+          "age_range": "14.7%"
+        }
+      },
+      "status": "fail",
+      "integrity": {
+        "raw": {
+          "stage": "raw",
+          "total_rows": 614,
+          "unique_reviews": 316,
+          "duplicate_reviews": 298,
+          "unique_customers": 595,
+          "missingness_pct": {
+            "review_text": "31.1%",
+            "gender": "19.9%",
+            "age_range": "14.7%",
+            "ethnicity": "12.1%"
+          }
+        },
+        "processed": {
+          "stage": "processed",
+          "total_rows": 614,
+          "unique_reviews": 316,
+          "duplicate_reviews": 298,
+          "unique_customers": 595,
+          "missingness_pct": {
+            "review_text": "31.1%",
+            "gender": "19.9%",
+            "gender_norm": "19.9%",
+            "age_group": "14.7%",
+            "age_range": "14.7%",
+            "ethnicity_norm": "12.1%",
+            "ethnicity": "12.1%"
+          },
+          "by_restaurant": [
+            {
+              "restaurant_name": "Village Whiskey",
+              "reviews": 614,
+              "unique_customers": 595,
+              "reviews_pct": 100.0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "source": "tastetrend_eastside_reviews.csv",
+      "row_count_processed": 1621,
+      "row_count_raw": 1784,
+      "checks": {
+        "missing_columns": [],
+        "duplicate_ids": 1430,
+        "row_count_mismatch": 163,
+        "invalid_ratings": 0,
+        "extreme_tips": 0,
+        "null_review_text_pct": "28.9%",
+        "rows_dropped_dedup": 163,
+        "conflicting_ids": 0
+      },
+      "warnings": {
+        "missing_values": {
+          "review_text": "28.9%",
+          "age_range": "31.3%"
+        }
+      },
+      "status": "fail",
+      "integrity": {
+        "raw": {
+          "stage": "raw",
+          "total_rows": 1784,
+          "missingness_pct": {
+            "age_range": "31.3%",
+            "feedback_comments": "29.1%",
+            "gender": "19.3%",
+            "total_spent": "17.9%",
+            "guest_name": "15.3%",
+            "ethnicity": "13.6%",
+            "satisfaction_score": "12.9%"
+          }
+        },
+        "processed": {
+          "stage": "processed",
+          "total_rows": 1621,
+          "unique_reviews": 191,
+          "duplicate_reviews": 1430,
+          "unique_customers": 1357,
+          "missingness_pct": {
+            "review_date": "66.9%",
+            "age_group": "31.3%",
+            "age_range": "31.3%",
+            "review_text": "28.9%",
+            "gender": "19.1%",
+            "gender_norm": "19.1%",
+            "total_spent": "18.4%",
+            "ethnicity": "13.4%",
+            "ethnicity_norm": "13.4%",
+            "rating_1_5": "13.1%",
+            "rating_raw": "13.1%",
+            "customer_name": "6.9%"
+          },
+          "by_restaurant": [
+            {
+              "restaurant_name": "The Bricks",
+              "reviews": 1621,
+              "unique_customers": 1357,
+              "reviews_pct": 100.0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "source": "tastetrend_midtown_reviews.txt",
+      "row_count_processed": 871,
+      "row_count_raw": 871,
+      "checks": {
+        "missing_columns": [],
+        "duplicate_ids": 0,
+        "row_count_mismatch": 0,
+        "invalid_ratings": 0,
+        "extreme_tips": 0,
+        "null_review_text_pct": "32.1%",
+        "rows_dropped_dedup": 0,
+        "conflicting_ids": 0
+      },
+      "warnings": {
+        "missing_values": {
+          "review_text": "32.1%",
+          "age_range": "36.7%"
+        }
+      },
+      "status": "warn",
+      "integrity": {
+        "raw": {
+          "stage": "raw",
+          "total_rows": 871,
+          "unique_reviews": 871,
+          "duplicate_reviews": 0,
+          "unique_customers": 750,
+          "missingness_pct": {
+            "age_range": "36.7%",
+            "review_text": "32.1%",
+            "total_spent": "23.7%",
+            "gender": "20.1%",
+            "rating_out_of_10": "14.6%",
+            "ethnicity": "14.5%",
+            "customer_name": "8.8%"
+          },
+          "by_restaurant": [
+            {
+              "restaurant_name": "Luke",
+              "reviews": 871,
+              "unique_customers": 750,
+              "reviews_pct": 100.0
+            }
+          ]
+        },
+        "processed": {
+          "stage": "processed",
+          "total_rows": 871,
+          "unique_reviews": 871,
+          "duplicate_reviews": 0,
+          "unique_customers": 750,
+          "missingness_pct": {
+            "age_range": "36.7%",
+            "age_group": "36.7%",
+            "review_text": "32.1%",
+            "total_spent": "23.7%",
+            "gender": "20.1%",
+            "gender_norm": "20.1%",
+            "rating_1_5": "14.6%",
+            "rating_raw": "14.6%",
+            "ethnicity": "14.5%",
+            "ethnicity_norm": "14.5%",
+            "customer_name": "8.8%"
+          },
+          "by_restaurant": [
+            {
+              "restaurant_name": "Luke",
+              "reviews": 871,
+              "unique_customers": 750,
+              "reviews_pct": 100.0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "source": "tastetrend_restaurant_info.csv",
+      "row_count_processed": 1,
+      "row_count_raw": 4,
+      "checks": {
+        "missing_columns": [],
+        "duplicate_ids": 0,
+        "row_count_mismatch": 3,
+        "invalid_ratings": 0,
+        "extreme_tips": 0,
+        "null_review_text_pct": "100.0%",
+        "rows_dropped_dedup": 3,
+        "conflicting_ids": 0
+      },
+      "warnings": {
+        "missing_values": {
+          "review_text": "100.0%",
+          "age_range": "100.0%"
+        }
+      },
+      "status": "fail",
+      "integrity": {
+        "raw": {
+          "stage": "raw",
+          "total_rows": 4,
+          "missingness_pct": {}
+        },
+        "processed": {
+          "stage": "processed",
+          "total_rows": 1,
+          "unique_reviews": 0,
+          "duplicate_reviews": 1,
+          "unique_customers": 0,
+          "missingness_pct": {
+            "review_id": "100.0%",
+            "customer_name": "100.0%",
+            "review_date": "100.0%",
+            "rating_raw": "100.0%",
+            "rating_scale": "100.0%",
+            "rating_1_5": "100.0%",
+            "review_text": "100.0%",
+            "tip_amount": "100.0%",
+            "total_spent": "100.0%",
+            "age_range": "100.0%",
+            "gender": "100.0%",
+            "tip_percentage": "100.0%",
+            "party_size": "100.0%",
+            "ethnicity": "100.0%"
+          },
+          "by_restaurant": [
+            {
+              "restaurant_name": "Village Whiskey",
+              "reviews": 0,
+              "unique_customers": 0,
+              "reviews_pct": 0.0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "source": "tastetrend_uptown_reviews.csv",
+      "row_count_processed": 1655,
+      "row_count_raw": 1655,
+      "checks": {
+        "missing_columns": [],
+        "duplicate_ids": 1337,
+        "row_count_mismatch": 0,
+        "invalid_ratings": 0,
+        "extreme_tips": 0,
+        "null_review_text_pct": "30.9%",
+        "rows_dropped_dedup": 0,
+        "conflicting_ids": 0
+      },
+      "warnings": {
+        "missing_values": {
+          "review_text": "30.9%",
+          "age_range": "15.0%"
+        }
+      },
+      "status": "fail",
+      "integrity": {
+        "raw": {
+          "stage": "raw",
+          "total_rows": 1655,
+          "missingness_pct": {
+            "comments": "30.9%",
+            "gender": "20.6%",
+            "age_range": "15.0%",
+            "ethnicity": "13.0%"
+          }
+        },
+        "processed": {
+          "stage": "processed",
+          "total_rows": 1655,
+          "unique_reviews": 318,
+          "duplicate_reviews": 1337,
+          "unique_customers": 1466,
+          "missingness_pct": {
+            "rating_raw": "100.0%",
+            "rating_1_5": "100.0%",
+            "review_text": "30.9%",
+            "gender_norm": "20.6%",
+            "gender": "20.6%",
+            "age_range": "15.0%",
+            "age_group": "15.0%",
+            "ethnicity": "13.0%",
+            "ethnicity_norm": "13.0%"
+          },
+          "by_restaurant": [
+            {
+              "restaurant_name": "Tavern",
+              "reviews": 1655,
+              "unique_customers": 1466,
+              "reviews_pct": 100.0
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "status": "fail",
+  "lambda_function": "tastetrend-dev-etl",
+  "lambda_arn": "arn:aws:lambda:eu-central-1:550744777598:function:tastetrend-dev-etl",
+  "log_group": "/aws/lambda/tastetrend-dev-etl"
+}

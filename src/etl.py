@@ -102,11 +102,12 @@ AGE_RANGE_MAP = {
     "65+": "elder"
 }
 
+# ----------------------------
 # Step 3 — Helpers
+# ----------------------------
+
 def read_table_any(path: Path) -> pd.DataFrame:
-    """
-    Read a CSV or TXT file into a pandas DataFrame with sensible defaults.
-    """
+    """Read a CSV or TXT file into a pandas DataFrame with sensible defaults."""
     path = Path(path)
     if path.suffix.lower() in {".csv", ".txt"}:
         try:
@@ -206,12 +207,61 @@ def cap_review_length(df: pd.DataFrame, max_len: int = 2000) -> pd.DataFrame:
         df_out["review_text_trunc"] = df_out["review_text"].astype("string").str.slice(0, max_len)
     return df_out
 
+# ----------------------------
+# Deduplication Functions
+# ----------------------------
+
+def deduplicate_reviews(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Deduplicate reviews with a safe heuristic:
+    - Drop duplicates on (review_id, customer_name).
+    - Flag conflicts when the same review_id is used by different customers
+      or when the same customer has multiple texts with the same review_id.
+    """
+    before = len(df)
+
+    # Step 1: Detect conflicts (before dropping!)
+    # Case A: same review_id but different customers
+    cust_conflicts = (
+        df.groupby("review_id")["customer_name"]
+          .nunique()
+          .reset_index()
+          .query("customer_name > 1")["review_id"]
+          .tolist()
+    )
+
+    # Case B: same review_id + customer_name, but >1 unique review_text
+    text_conflicts = (
+        df.groupby(["review_id", "customer_name"])["review_text"]
+          .nunique()
+          .reset_index()
+          .query("review_text > 1")["review_id"]
+          .tolist()
+    )
+
+    conflict_ids = set(cust_conflicts) | set(text_conflicts)
+    if conflict_ids:
+        conflicts = df[df["review_id"].isin(conflict_ids)]
+        logger.warning("Potential review_id conflicts detected: %d rows", len(conflicts))
+        conflicts.to_csv("/tmp/review_conflicts.csv", index=False)
+
+    # Step 2: Drop duplicates safely
+    df = df.drop_duplicates(subset=["review_id", "customer_name"], keep="first")
+
+    after = len(df)
+    logger.info("Deduplication reduced rows from %d to %d", before, after)
+    return df
+
+# ----------------------------
+# Core Classes
+# ----------------------------
 
 @dataclass
 class FileSpec:
     """Specification for a single input file to be processed."""
     path: Path
     source_name: str
+
 
 class ReviewLoader:
     """Loader and transformer for restaurant review datasets."""
@@ -293,7 +343,12 @@ class ReviewLoader:
         df = add_log_total_spent(df)
         df = cap_review_length(df, max_len=2000)
 
-        return df[STANDARD_COLS + ["gender_norm", "ethnicity_norm", "age_group"]]
+        # Deduplicate here
+        df = deduplicate_reviews(df)
+
+        expected_cols = STANDARD_COLS + ["gender_norm", "ethnicity_norm", "age_group"]
+        available_cols = [c for c in expected_cols if c in df.columns]
+        return df[available_cols]
 
     def schema_audit(self) -> pd.DataFrame:
         """Return a log of schema mappings for traceability."""
@@ -309,20 +364,23 @@ class ReviewLoader:
         return pd.DataFrame(rows).sort_values(["column", "source", "value"])
 
 
-# Local runner
 if __name__ == "__main__":
-    files = [
+    # ----------------------------
+    # 1. Load and process reviews
+    # ----------------------------
+    review_files = [
         FileSpec(DATA_RAW / "tastetrend_downtown_reviews.csv", "downtown"),
         FileSpec(DATA_RAW / "tastetrend_eastside_reviews.csv", "eastside"),
         FileSpec(DATA_RAW / "tastetrend_midtown_reviews.txt", "midtown"),
         FileSpec(DATA_RAW / "tastetrend_uptown_reviews.csv", "uptown"),
     ]
-    loader = ReviewLoader(SYNONYMS)
-    frames = [loader.load_and_standardize(f) for f in files]
-    reviews = pd.concat(frames, ignore_index=True)
-    logger.info(f"Combined rows: {len(reviews):,}")
 
-    # Audits
+    loader = ReviewLoader(SYNONYMS)
+    frames = [loader.load_and_standardize(f) for f in review_files]
+    reviews = pd.concat(frames, ignore_index=True)
+    logger.info(f"Combined review rows: {len(reviews):,}")
+
+    # Review audits
     audit = loader.schema_audit()
     cats = loader.categorical_report()
     missing_pct = reviews.isna().mean().sort_values(ascending=False)
@@ -331,11 +389,26 @@ if __name__ == "__main__":
     logger.info("Categorical report preview:\n%s", cats.head())
     logger.info("Missingness summary:\n%s", missing_pct.head())
 
-    # Only save snapshot if not running inside AWS Lambda
+    # ----------------------------
+    # 2. Load restaurant metadata
+    # ----------------------------
+    rest_info_path = DATA_RAW / "tastetrend_restaurant_info.csv"
+    restaurant_info = pd.read_csv(rest_info_path)
+
+    # Normalize schema
+    restaurant_info.columns = [
+        c.strip().lower().replace(" ", "_") for c in restaurant_info.columns
+    ]
+
+    logger.info(f"Loaded restaurant metadata: {len(restaurant_info):,} rows")
+    logger.debug("Restaurant info preview:\n%s", restaurant_info.head())
+
+    # ----------------------------
+    # 3. Save snapshot (local only)
+    # ----------------------------
     if not os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
         SNAP_PATH = PROJECT_ROOT / "data" / "processed_exploration.parquet"
         cols_to_save = [c for c in STANDARD_COLS if c != "rating_scale"] + ["review_length"]
         cols_to_save = [c for c in cols_to_save if c in reviews.columns]
         reviews[cols_to_save].to_parquet(SNAP_PATH, index=False)
         logger.info(f"Saved exploration snapshot to: {SNAP_PATH}")
-
