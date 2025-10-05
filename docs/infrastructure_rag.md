@@ -1,235 +1,204 @@
-# Infrastructure Decisions – TasteTrend RAG (GenAI POC)
+# Infrastructure Decision Record – TasteTrend RAG (GenAI Proof of Concept)
 
-**Purpose:**  
-Document architecture, infrastructure, and operational decisions for the **Retrieval-Augmented Generation (RAG)** pipeline of the TasteTrend AWS GenAI Proof of Concept.  
+**Purpose**  
+Document architectural and infrastructure decisions for the **Retrieval-Augmented Generation (RAG)** pipeline developed for the TasteTrend AWS GenAI Proof of Concept (PoC).
 
-**Scope:**  
-Covers the OpenSearch configuration, Bedrock embedding setup, IAM design, data ingestion strategy, and roadmap for integrating the RAG layer with Bedrock Agents and API Gateway in the next phases.
-
----
-
-## System Overview
-
-The RAG system enables semantic search and contextual retrieval of restaurant reviews from processed data.  
-It provides a **retrieval layer** that augments Bedrock’s generative models with factual, up-to-date review information stored in OpenSearch.  
-
-**Goal:** Empower business analysts to query reviews in natural language (e.g., _“What do customers like most about Uptown?”_) and receive grounded, evidence-based insights rather than hallucinated responses.
+**Goal**  
+Demonstrate that restaurant review data can be semantically retrieved and used to generate grounded, factual responses through **Amazon Bedrock** models integrated with **OpenSearch Serverless**.
 
 ---
 
-## OpenSearch Domain Configuration
+## 1. Context and Objectives
 
-- **Engine Version:** OpenSearch 2.13  
-- **Instance Type:** `t3.small.search` (single node, cost-optimized for PoC)  
-- **Storage:** 20 GB gp3 EBS  
-- **Encryption:** At rest + node-to-node encryption enabled  
-- **TLS:** v1.2 minimum enforced  
-- **Access Control:** IAM-based; restricted to designated ingestion and query roles  
-- **Index Name:** `reviews_v1`
+This Proof of Concept focuses on validating the **RAG pipeline’s retrieval quality** and **Bedrock integration**.  
+The goal is not scalability or automation, but **accuracy, transparency, and speed of iteration**.
 
-**Trade-offs:**
-- ✅ Managed, serverless architecture suitable for a PoC workload  
-- ✅ Easy integration with Bedrock and Python client libraries  
-- ❌ Single-node setup (no redundancy or replication)  
-- **Mitigation:** Future MVP will use multi-AZ domain with replica shards and fine-grained access control.
+The system enables natural-language queries such as:  
+_“What do customers like most about Uptown?”_  
+and returns evidence-based insights grounded in actual reviews.
 
 ---
 
-## Index Design
+## 2. Architecture Summary
 
-- **Vector Field:** `embedding` (`knn_vector`, dimension=1024)  
-- **ANN Engine:** HNSW (`nmslib`) with cosine similarity  
-- **Parameters:** `m=16`, `ef_construction=128`, `ef_search=128`  
-- **Metadata Fields:**  
-  - `review_id`, `review_chunk`, `restaurant_name`, `location`, `rating`, `sentiment`, `menu_item`
-
-**Trade-offs:**
-- ✅ Cosine similarity works optimally with normalized Titan embeddings  
-- ✅ HNSW balances speed and recall  
-- ❌ Slight accuracy loss compared to brute-force on small datasets  
-- **Mitigation:** Increase `ef_search` dynamically or add re-ranking step during Bedrock orchestration.
+| Component | Purpose | Implementation |
+|------------|----------|----------------|
+| **Data Source** | Cleaned and processed restaurant reviews | S3 bucket `tastetrend-dev-processed-*` |
+| **Embedding Model** | Generate semantic vector embeddings | Bedrock Titan Embed Text v2 (1024D) |
+| **Vector Store** | Store and search embeddings | OpenSearch Serverless (`tastetrend-rag`) |
+| **Execution** | One-off embedding & ingestion | Manual EC2 batch run |
+| **Access Control** | Secure data and model access | IAM roles (ingest/query) |
 
 ---
 
-## Embedding Generation
+## 3. Key Decisions
 
-- **Model:** `amazon.titan-embed-text-v2:0`  
-- **Embedding Dimension:** 1024  
-- **Normalization:** Enabled  
-- **Batch Size:** 32 (optimized for Bedrock API throughput)  
-- **Runtime:** Python 3.11  
-- **Dependencies:**: boto3, opensearch-py, pandas, pyarrow, s3fs, tqdm, python-dotenv
-
-
-**Trade-offs:**
-- ✅ AWS-native embedding service (no third-party dependency)  
-- ✅ Consistent performance and compatibility with Bedrock Agents  
-- ❌ Latency increases with larger batches  
-- **Mitigation:** Parallelize embedding generation or move to Lambda-based async ingestion in MVP.
+### 3.1 OpenSearch Serverless
+**Decision:** Use OpenSearch Serverless for vector storage and retrieval.  
+**Rationale:**  
+- Fully managed and cost-efficient for PoC workloads.  
+- Native integration with Bedrock SDKs and boto3.  
+- Supports cosine similarity with Titan embeddings.  
+**Trade-off:** Single-AZ setup without replication.  
+**Mitigation (MVP):** Move to multi-AZ domain with replica shards and fine-grained access control.
 
 ---
 
-## Data Chunking & Ingestion Workflow
-
-**Input Source:**  
-`processed_final.parquet` from the **processed S3 bucket** (`tastetrend-dev-processed-<account_id>`).  
-
-**Chunking Parameters:**
-- **Chunk Size:** ~1200 characters  
-- **Overlap:** 20% (~240 characters)  
-- **Text Field:** `review_text`
-
-**Ingestion Steps:**
-1. Load processed dataset from S3.  
-2. Split reviews into overlapping text chunks.  
-3. Generate embeddings via Bedrock’s Titan model.  
-4. Create JSON payloads with `{embedding + metadata}`.  
-5. Bulk index documents into OpenSearch.
-
-**Trade-offs:**
-- ✅ Improves retrieval accuracy for long reviews.  
-- ✅ Maintains context continuity.  
-- ❌ Increases index storage (~15–25%).  
-- **Mitigation:** Parameterize chunk size and overlap for performance tuning.
+### 3.2 Embedding Generation with Bedrock Titan
+**Decision:** Use `amazon.titan-embed-text-v2:0` for embeddings.  
+**Rationale:**  
+- Native AWS model ensures consistency and compatibility with Bedrock Agents.  
+- No external dependencies or custom hosting required.  
+**Trade-off:** Latency increases with batch size.  
+**Mitigation (MVP):** Parallelize embedding requests via Lambda and Step Functions.
 
 ---
 
-## Implementation Overview
-
-**Location:** `src/rag/`  
-
-### Primary Scripts
-- `create_index.py` → defines OpenSearch schema  
-- `ingest_parquet_to_opensearch.py` → chunks, embeds, and indexes  
-- `test_query.py` → validates semantic search  
+### 3.3 Manual EC2 Execution (Chosen for PoC)
+**Decision:** Run the ingestion pipeline manually on EC2.  
+**Rationale:**  
+- Fastest route to execution without deployment overhead.  
+- Complete transparency and manual control for debugging.  
+- Low cost due to short-lived instance (terminated post-run).  
+**Trade-off:** Manual trigger, no retry logic, and dependency on local credentials.  
+**Mitigation (MVP):** Replace with automated ingestion using **Lambda + Step Functions**.
 
 ---
 
-## Observability & Validation
+## 4. Data Workflow
 
-### Logging
-- Console logs for ingestion progress and errors  
-- Batch-level progress updates every 500 embeddings  
+1. Load dataset (`processed_final.parquet`) from S3.  
+2. Split reviews into overlapping text chunks (~1200 chars, 20% overlap).  
+3. Generate Titan embeddings in batches of 32.  
+4. Combine embeddings with metadata (`review_id`, `restaurant_name`, `rating`, etc.).  
+5. Bulk index documents into OpenSearch (`reviews_v1`).  
+6. Validate retrieval with known queries.
 
-### Validation
-- Test retrieval relevance using known business queries  
-- Measure similarity scores to confirm semantic grouping  
+**Outcome:**  
+- 1930 chunks indexed successfully.  
+- 0 failures.  
+- Queries returned relevant, semantically consistent results.
 
-**Example Query Test:**
-```python
-results = search(
-    "What do customers like most about the Uptown location?",
-    k=6,
-    filters={"location": "Uptown"}
-)
+---
+
+## 5. Security & IAM
+
+| Role | Purpose | Permissions |
+|------|----------|-------------|
+| `tastetrend-rag-ingest-role` | Data ingestion | Read from S3, write to OpenSearch, invoke Bedrock |
+| `tastetrend-rag-query-role` | Query access | Read-only OpenSearch access |
+
+**Security Controls:**
+- Principle of least privilege applied.  
+- HTTPS enforced, IAM-based domain access.  
+- Temporary credentials via STS.  
+- *Next Step:* Use Secrets Manager and VPC-restricted endpoints.
+
+---
+
+## 6. Observability & Validation
+
+**Logging:**  
+- Console logs with progress updates every 500 embeddings.  
+- Summary output at completion.
+
+```
+Starting review embedding and indexing...
+Loaded 1660 reviews. Starting embedding and indexing...
+Progress: 1500 chunks processed (1500 indexed, 0 failed)
+--- Ingestion complete ---
+Indexed: 1930 | Failed: 0
 ```
 
-### Performance Targets
+**Validation:**  
+- Tested retrieval on sample business queries.  
+- Verified cosine similarity and clustering consistency.
+
+**Performance Targets:**
 
 | Metric | Target | Notes |
 |---------|---------|-------|
-| Embedding throughput | 500–1000 docs/min | Single-threaded, Titan v2 |
-| Query latency | <200 ms | t3.small.search, HNSW engine |
-| Recall@6 | ≥85% | Based on manual semantic evaluation |
+| Embedding throughput | 500–1000 docs/min | Titan v2, single-threaded |
+| Query latency | <200 ms | HNSW engine |
+| Recall@6 | ≥85% | Based on semantic evaluation |
 
 ---
 
-## IAM & Security Design
+## 7. Infrastructure as Code
 
-### Execution Roles
-- **tastetrend-rag-ingest-role** → read processed data, write to OpenSearch  
-- **tastetrend-rag-query-role** → read-only access for API query Lambdas  
+**Terraform Modules**
+- `opensearch_domain` → manages RAG collection  
+- `iam_roles` → defines ingest/query roles  
+- `variables.tf` → defines region, endpoints, and buckets  
 
-### Permissions
-- S3 (read-only for processed data)  
-- OpenSearch (write/read as per role)  
-- Bedrock embedding model invocation  
+**Standards**
+- Naming: `tastetrend-dev-*`  
+- Tagged for environment and cost tracking  
 
-### Security Controls
-- Principle of least privilege enforced  
-- Domain access limited by IAM ARN  
-- HTTPS enforced; no public access  
-- Temporary credentials via AWS STS  
-- *Future:* Move secrets to AWS Secrets Manager  
-
-**Trade-offs:**
-- ✅ Secure and auditable IAM boundary  
-- ✅ Roles aligned with least privilege principle  
-- ❌ Slightly more complex IAM structure  
-**Mitigation:** Reuse roles for Bedrock Agent access in Phase 5  
+**Future (MVP):**
+- Transition to a production-grade serverless workflow with AWS Lambda and Step Functions orchestration
 
 ---
 
-## Deployment Strategy
+## 8. Roadmap
 
-### Current (PoC)
-- Domain created via Terraform (`opensearch_domain` module)  
-- Python scripts executed locally using `.env` credentials  
-- Manual ingestion into OpenSearch  
-
-### Rejected Approaches
-- Multi-index (per location) → unnecessary complexity  
-- Local OpenSearch cluster → replaced by managed AWS service  
-
-### Future (MVP)
-- Package ingestion workflow as a Lambda function  
-- Trigger automated embedding on dataset updates  
-- Manage credentials and configurations via Terraform variables  
+| Phase | Goal | Key Actions |
+|-------|------|--------------|
+| **PoC (Current)** | Validate end-to-end retrieval | Manual EC2 run, minimal IAM |
+| **MVP (Next)** | Automate ingestion & harden security | Lambda + Step Functions, CloudWatch metrics |
+| **Production** | Scale and integrate | Multi-AZ OpenSearch, re-ranking, API Gateway integration |
 
 ---
 
-## Versioning & Artifacts
+## 9. General Trade-offs & Mitigations
 
-- **Dataset:** `processed_final.parquet` (timestamped)  
-- **Index Version:** `reviews_v1`  
-- **Script Versions:** Maintained in Git under `src/rag/`  
-- **Artifacts:** Stored in `tastetrend-dev-artifacts-<account_id>`  
-
-**Trade-offs:**
-- ✅ Simple and transparent versioning  
-- ❌ No automatic rollback mechanism  
-**Mitigation:** Introduce alias-based versioning in future phases  
+| Area | Trade-off | Mitigation (MVP) |
+|------|------------|------------------|
+| **Scalability** | Manual execution | Step Functions orchestration |
+| **Resilience** | Single node | Multi-AZ setup |
+| **Security** | Public endpoint | VPC restriction |
+| **Automation** | Manual ingestion | Lambda event triggers |
+| **Versioning** | Manual file tracking | Index alias-based versioning |
 
 ---
 
-## IaC (Infrastructure as Code)
+## 10. Outcome Summary
 
-### Terraform Modules
-- `opensearch_domain` – manages the RAG index cluster  
-- `iam_roles` – defines ingestion/query roles  
-- `variables.tf` – defines region, domain endpoint, and bucket URIs  
+The TasteTrend RAG PoC validated the **core technical hypothesis** — that OpenSearch Serverless with Titan embeddings can deliver accurate, low-latency semantic retrieval for restaurant reviews.  
 
-### Standards
-- Naming convention: `tastetrend-dev-*`  
-- Tags for ownership, environment, and cost tracking  
+Manual EC2 execution was a **defensible and deliberate choice**, balancing speed, cost, and transparency in early experimentation.  
+The next phase will focus on **automation, security, and scalability** using fully serverless ingestion pipelines and integrated Bedrock orchestration.
 
 ---
 
-## Future Enhancements
-- Add CloudWatch metrics for ingestion and query latency  
-- Enable automated reindexing pipelines  
-- Extend Terraform to deploy Bedrock Agent and API Gateway integration  
+## Appendix A – OpenSearch Configuration
+
+| Parameter | Value |
+|------------|--------|
+| **Collection Name** | `tastetrend-rag` |
+| **Region** | `eu-central-1` |
+| **Encryption** | AWS-managed key |
+| **Network Policy** | Temporarily public |
+| **Access Policy** | IAM-based (ingest/query roles) |
+| **Engine** | HNSW (`nmslib`) |
+| **Similarity Metric** | Cosine |
+| **Vector Dimension** | 1024 |
+| **Index Name** | `reviews_v1` |
+| **HNSW Params** | `m=16`, `ef_construction=128`, `ef_search=128` |
 
 ---
 
-## Future MVP Roadmap
+## Appendix B – Dependencies & Environment
 
-### Phase 5 – Bedrock Agent Integration
-- Implement RAG orchestration with Bedrock Agents  
-- Develop contextual prompt templates  
-- Re-rank search results using Titan embeddings  
-
-### Phase 6 – API Gateway Integration
-- Deploy API endpoint with Lambda proxy  
-- Implement request → retrieve → generate pipeline  
-- Enable business-level question answering via HTTP requests  
+- **Runtime:** Python 3.11 (PoC), 3.9 (EC2 AMI)  
+- **Dependencies:** boto3, opensearch-py, pandas, pyarrow, s3fs, tqdm, python-dotenv  
+- **Instance:** EC2 `t3.medium` (Amazon Linux 2023)  
+- **Execution Duration:** ~15 minutes (embedding + indexing)  
+- **Termination:** Instance destroyed post-run to prevent costs  
 
 ---
 
-## Scaling Roadmap
-- Upgrade to `m6g.large.search` (multi-AZ)  
-- Use Step Functions for parallel embedding generation  
-- Add CloudWatch alerts for latency, recall, and throughput  
-
-✅ This document captures infrastructure and design decisions for the TasteTrend RAG layer.  
-Bedrock orchestration and API integration details will follow in `infrastructure_bedrock_agent.md` and `infrastructure_api_gateway.md`.
+✅ **Document Status:** Finalized for PoC phase.  
+Follow-up docs:  
+- `infrastructure_bedrock_agent.md`  
+- `infrastructure_api_gateway.md`

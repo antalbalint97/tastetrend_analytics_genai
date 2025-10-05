@@ -28,11 +28,11 @@ resource "aws_opensearchserverless_security_policy" "encryption" {
   })
 }
 
-# ---- Access Policy (Lambda Principals - Least Privilege) ----
+# ---- Access Policy (EC2 + Lambda Principals - Least Privilege) ----
 resource "aws_opensearchserverless_access_policy" "access" {
   name        = "tastetrend-access"
   type        = "data"
-  description = "Allow Lambda roles to read/write documents and manage indexes in the TasteTrend collection"
+  description = "Allow Lambda and EC2 roles to read/write documents and manage indexes in the TasteTrend collection"
 
   policy = jsonencode([
     {
@@ -53,7 +53,10 @@ resource "aws_opensearchserverless_access_policy" "access" {
           ]
         }
       ],
-      Principal = var.lambda_role_arns
+      Principal = concat(
+        var.lambda_role_arns,
+        ["arn:aws:iam::550744777598:role/tastetrend-ec2-ingest-role"]
+      )
     }
   ])
 }
@@ -103,6 +106,7 @@ output "collection_endpoint" {
 #############################################
 # Variables
 #############################################
+
 variable "lambda_role_arns" {
   description = "List of IAM role ARNs that should have access to the OpenSearch collection"
   type        = list(string)
