@@ -69,3 +69,5 @@ lambda.zip
 *.tar.gz
 *.zip
 tmp/
+
+.env
