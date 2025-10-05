@@ -94,16 +94,6 @@ It provides a **retrieval layer** that augments Bedrock’s generative models wi
 
 ---
 
-## Environment Configuration
-
-**Environment Variables (.env or Terraform variables):**
-```bash
-AWS_REGION=eu-central-1
-OS_DOMAIN_ENDPOINT=https://<domain-id>.es.amazonaws.com
-OS_INDEX=reviews_v1
-BEDROCK_EMBED_MODEL=amazon.titan-embed-text-v2:0
-PROCESSED_S3_URI=s3://<bucket>/processed_final.parquet
-
 ## Implementation Overview
 
 **Location:** `src/rag/`  
