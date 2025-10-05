@@ -1,9 +1,11 @@
 # Data Exploration, Standardization & Validation Report
 
 ## Overview
+
 **Project:** TasteTrend AWS GenAI Proof of Concept.  
+**Phase:** 1–3 — Data Cleaning, Schema Normalization, and Validation.  
 **Purpose:** Establish a high-quality, bias-audited dataset for downstream analytics, embeddings, and LLM fine-tuning.
-**Purpose:** Establish a high-quality, bias-audited dataset for downstream analytics, embeddings, and LLM fine-tuning.
+
 
 ---
 
