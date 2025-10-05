@@ -70,5 +70,6 @@ lambda.zip
 *.zip
 tmp/
 
-.env
-.venv
+# Local Lambda and test payloads
+event_*.json
+response_*.json
