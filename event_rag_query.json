@@ -1,0 +1,6 @@
+{
+  "action": "rag_query",
+  "params": {
+    "query": "What do customers say about the service at Downtown restaurants?"
+  }
+}

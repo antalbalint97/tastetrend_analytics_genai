@@ -1,8 +1,27 @@
-variable "region"   { default = "eu-central-1" }
-variable "project"  { default = "tastetrend" }
+#############################################
+# Variables
+#############################################
 
-# Lambda deployment version (controls zip file name)
+variable "region" {
+  type        = string
+  description = "AWS region to deploy all resources"
+  default     = "eu-central-1"
+}
+
+variable "project" {
+  type        = string
+  description = "Project name prefix used for naming resources"
+  default     = "tastetrend"
+}
+
 variable "lambda_version" {
-  type = string
-  default = "0.1"
+  type        = string
+  description = "Lambda deployment package version (used in ZIP key name)"
+  default     = "0.1"
+}
+
+variable "env" {
+  type        = string
+  description = "Deployment environment (e.g., dev, staging, prod)"
+  default     = "dev"
 }

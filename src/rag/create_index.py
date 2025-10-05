@@ -1,25 +1,45 @@
-import boto3, os
-from opensearchpy import OpenSearch, RequestsHttpConnection
-from opensearchpy.aws4auth import AWSV4SignerAuth
+# create_index.py
+# Purpose: create an OpenSearch index for RAG with HNSW kNN vectors.
 
+import os
+import boto3
+from opensearchpy import OpenSearch, RequestsHttpConnection
+from requests_aws4auth import AWS4Auth
+
+
+# --- Configuration from environment ---
 REGION = os.environ["AWS_REGION"]
-OS_ENDPOINT = os.environ["OS_DOMAIN_ENDPOINT"]  # https://...
+OS_ENDPOINT = os.environ["OPENSEARCH_ENDPOINT"] 
 OS_INDEX = os.environ.get("OS_INDEX", "reviews_v1")
 
-session = boto3.Session()
-credentials = session.get_credentials()
-awsauth = AWSV4SignerAuth(credentials, REGION, "es")
 
+# --- AWS auth (SigV4) ---
+session = boto3.Session()
+creds = session.get_credentials()
+awsauth = AWS4Auth(
+    creds.access_key,
+    creds.secret_key,
+    REGION,
+    "aoss",                      # service ID for Amazon OpenSearch Service (use "aoss" for Serverless)
+    session_token=creds.token  # include STS session token if present
+)
+
+# Normalize host for the client (strip scheme if provided)
+host = OS_ENDPOINT.replace("https://", "").replace("http://", "").split("/")[0]
+
+# --- OpenSearch client ---
 client = OpenSearch(
-    hosts=[{"host": OS_ENDPOINT.replace("https://",""), "port": 443}],
+    hosts=[{"host": host, "port": 443}],
     http_auth=awsauth,
     use_ssl=True,
     verify_certs=True,
     connection_class=RequestsHttpConnection,
 )
 
-def main():
-    if client.indices.exists(OS_INDEX):
+
+def main() -> None:
+    """Create the index if it doesn't already exist."""
+    if client.indices.exists(index=OS_INDEX):
         print(f"Index {OS_INDEX} already exists")
         return
 
@@ -52,8 +72,10 @@ def main():
             }
         }
     }
+
     client.indices.create(index=OS_INDEX, body=body)
     print(f"Created index {OS_INDEX}")
+
 
 if __name__ == "__main__":
     main()

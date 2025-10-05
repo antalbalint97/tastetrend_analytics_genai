@@ -71,3 +71,4 @@ lambda.zip
 tmp/
 
 .env
+.venv

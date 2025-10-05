@@ -23,15 +23,15 @@ variable "zip_key"    { type = string }  # e.g., "lambda/etl-0.2.zip"
 resource "aws_lambda_function" "this" {
   function_name = var.function_name
   role          = var.role_arn
-  handler       = "api_handler.lambda_handler"
+  handler       = "lambda.api_handler.lambda_handler"
   runtime       = "python3.11"
 
   # Use pre-uploaded artifact from S3
   s3_bucket = var.zip_bucket
   s3_key    = var.zip_key
 
-  timeout       = 30
-  memory_size   = 1024
+  timeout       = 900
+  memory_size   = 3008
   architectures = ["x86_64"]
 
   # Attach the pandas/numpy layer
