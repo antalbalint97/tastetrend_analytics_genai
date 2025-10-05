@@ -1,0 +1,37 @@
+{
+  "gender_norm": {
+    "counts": {
+      "male": 363,
+      "na": 336,
+      "female": 323,
+      "NA": 1,
+      "non_binary": 320
+    },
+    "missing_pct": 19.4
+  },
+  "age_group": {
+    "counts": {
+      "NA": 1,
+      "elder": 219,
+      "adult": 214,
+      "mature": 208,
+      "young_adult": 203,
+      "senior": 192,
+      "mid_age": 179
+    },
+    "missing_pct": 27.03
+  },
+  "ethnicity_norm": {
+    "counts": {
+      "other": 222,
+      "native_american": 217,
+      "NA": 1,
+      "asian": 216,
+      "caucasian": 210,
+      "african_american": 198,
+      "mixed": 195,
+      "hispanic": 190
+    },
+    "missing_pct": 13.03
+  }
+}

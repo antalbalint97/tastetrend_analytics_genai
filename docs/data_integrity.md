@@ -1,8 +1,9 @@
-# Data Exploration & Standardization Report
+# Data Exploration, Standardization & Validation Report
 
 ## Overview
-This document records the results of the initial **data exploration and wrangling phase** for the TasteTrend AWS GenAI POC.  
-The objective of this phase was to understand data quality, identify inconsistencies, and define a consistent schema that will support downstream ETL, analytics, and GenAI use cases.
+**Project:** TasteTrend AWS GenAI Proof of Concept  
+**Phase:** 1-3 — Data Cleaning, Schema Normalization, and Validation
+**Purpose:** Establish a high-quality, bias-audited dataset for downstream analytics, embeddings, and LLM fine-tuning.
 
 ---
 
@@ -120,38 +121,18 @@ AGE_RANGE_MAP = {
 
 ---
 
-## Duplicate Handling Strategy
+### Final Deduplication & ID Regeneration Logic
 
-During exploration we identified duplicate review IDs that were assigned to different customers or contained slightly varied review texts.
-This indicated that relying on review_id alone was not sufficient for deduplication.
+Enhanced multi-stage deduplication was implemented in Lambda:
 
-### Strategy implemented:
+1. **Row cleanup:** Drop fully empty rows.  
+2. **Text-based deduplication:** Remove exact duplicate `review_text` values.  
+3. **Composite key check:** Remove duplicates across  
+   (`customer_name`, `review_text`, `review_date`, `restaurant_name`).  
+4. **Conflict detection:** If a single `review_id` maps to multiple customers or texts, flag as `"conflicting_ids"` in validation logs (but retain one canonical row).  
+5. **Global ID regeneration:** After merging all sources, new sequential `review_id`s were assigned (`review_id = 1...N`), ensuring global uniqueness across the dataset.
 
-#### Primary deduplication
-
-Drop exact duplicates across:
-
-`["review_id", "customer_name", "restaurant_name", "review_date"]`
-
-#### Conflict detection
-
-If the same review_id appears with different customer_name or review_text, these rows are flagged as conflicts.
-Conflicts are not automatically dropped — they are logged and surfaced in the validation JSON under:
-
-`"checks": {
-    "conflicting_ids": <count>
-}`
-
-#### Validation reporting
-
-- Deduplication conflicts do not fail the pipeline.
-- Instead, they raise a warning (status = "warn") so downstream teams can investigate without data loss.
-
-### Outcome
-
-- Ensures uniqueness at the pair level (review_id + customer_name).
-- Maintains visibility into suspicious reuse of identifiers.
-- Balances data trustworthiness with safeguards against accidental data loss in cases where different customers share the same review identifier.
+This preserves one real review per customer-restaurant-date combination — reflecting realistic user behavior (a customer can leave one review per restaurant per time).
 
 ---
 
@@ -169,6 +150,31 @@ Conflicts are not automatically dropped — they are logged and surfaced in the 
 - Categorical report implemented → unique values per source.  
 - Logging of missing strings and type coercion errors.  
 - Next step: consider **automated validation checks** in Lambda (e.g., assert no values exceed capped ranges, no unmapped categories remain).
+
+## Validation Summary (Lambda Run)
+
+Automated validation (`validation_combined.json`) verified:
+- All files successfully parsed and standardized.
+- No invalid ratings or numeric coercion errors.
+- Significant duplicate reduction (~40% of rows dropped due to redundancy).
+- Conflicting review IDs detected pre-standardization (e.g. 298 in downtown), but **resolved after global ID regeneration**.
+- Restaurant info handled separately (non-review schema).
+
+All validation issues are logged but non-blocking — allowing the ETL pipeline to complete while maintaining traceability.
+
+
+## Bias & Representation Audit
+
+A lightweight bias summary was generated post-ETL (`bias_summary.json`) covering demographic distributions and missingness.
+
+| Variable | Non-missing share | Notes |
+|-----------|------------------|-------|
+| **Gender** | ~80.6% filled | Slight overrepresentation of male vs female; non-binary group retained. |
+| **Age Group** | ~73% filled | Balanced distribution across adult ranges; moderate missingness (27%). |
+| **Ethnicity** | ~87% filled | Diverse coverage; “other” and “mixed” categories included. |
+
+These proportions will inform fairness monitoring and model bias mitigation strategies in downstream GenAI components.
+
 
 ---
 

@@ -1,9 +1,10 @@
 # Infrastructure Decisions – TasteTrend ETL (GenAI POC)
 
-## Overview
-This document records the infrastructure-related design decisions, trade-offs, and roadmap for the **TasteTrend ETL pipeline** deployed in AWS.
+**Purpose:**  
+Document infrastructure, deployment, and operational decisions for the TasteTrend ETL pipeline supporting the **AWS GenAI Proof of Concept**.  
+**Scope:**  
+Covers the AWS Lambda configuration, S3 architecture, IAM design, versioning, and roadmap for scaling beyond the MVP phase.
 
-The objective is to ensure clear separation between **data standardization (documented in `data_exploration.md`)** and **infrastructure setup** for operating the ETL at scale.
 
 ---
 
@@ -19,6 +20,18 @@ The objective is to ensure clear separation between **data standardization (docu
 - ✅ Cheap for POC workloads.  
 - ❌ Hard runtime limits (15 min, /tmp size, memory).  
 - **Mitigation:** Batch processing not supported in MVP; future: consider step functions or container-based approach if limits reached.
+
+### Execution Flow
+1. S3 event (or manual trigger) invokes Lambda.  
+2. Lambda downloads the raw file from `raw` bucket into `/tmp`.  
+3. Local transformation and validation performed (pandas-based).  
+4. Processed dataset + logs uploaded to `processed` bucket.  
+5. Optional: bias and validation summaries generated under `processed/logs/`.
+
+## Observability & Logging
+- **Logs:** All execution logs stored in CloudWatch (`/aws/lambda/tastetrend-dev-etl`).  
+- **Validation reports:** Written as JSON (`validation_<timestamp>.json`) to the processed bucket.  
+- **Metrics:** Basic success/failure counters tracked in CloudWatch; future versions will emit custom metrics (e.g., number of rows processed, validation failures).
 
 ---
 
@@ -57,6 +70,12 @@ The objective is to ensure clear separation between **data standardization (docu
   - ✅ Clear separation of buckets + roles = easier auditing.  
   - ❌ Slightly more verbose IAM policy.  
   - **Mitigation:** Scoped policies attached only to Lambda role.
+
+### Security & Compliance
+- Principle of least privilege enforced at the bucket-level resource ARNs.  
+- No cross-account access permitted in dev.  
+- Environment variables used for credentials only in dev; will be replaced by **AWS Secrets Manager** in production.  
+- CloudTrail auditing enabled for S3 and Lambda API calls.
 
 ---
 
@@ -99,11 +118,13 @@ The objective is to ensure clear separation between **data standardization (docu
 ---
 
 ## Future MVP Roadmap
-- Batch ETL (multi-file triggers via S3 event).  
-- CI/CD with automated packaging + deployment.  
-- Automated validation pipeline integrated with Lambda.  
-- Promotion of dev → staging → prod via Lambda aliases.  
-- Optional: Migrate to container-based Lambda if pandas workloads exceed current limits.  
+- **Batch ETL:** Multi-file S3 triggers (Step Functions).  
+- **CI/CD:** Automated packaging, validation, and deployment.  
+- **Automated QA:** Integrate schema and bias validation before promotion.  
+- **Promotion flow:** Dev → Staging → Prod via Lambda aliases.  
+- **RAG integration:** Stream processed review data to the embedding generator for the GenAI retrieval layer.  
+- **Scaling:** Container-based Lambda or ECS task if pandas workloads exceed current limits.
+
 
 ---
 

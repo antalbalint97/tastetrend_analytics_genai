@@ -1,3 +1,12 @@
 pandas==2.2.2
 numpy==1.26.4
 pyarrow==17.0.0
+
+# --- RAG and OpenSearch dependencies ---
+boto3
+opensearch-py
+pandas
+pyarrow
+s3fs
+tqdm
+python-dotenv

@@ -26,6 +26,7 @@ from typing import Dict, List
 
 import numpy as np
 import pandas as pd
+import json
 
 from utils.logger import get_logger
 
@@ -213,44 +214,52 @@ def cap_review_length(df: pd.DataFrame, max_len: int = 2000) -> pd.DataFrame:
 
 def deduplicate_reviews(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Deduplicate reviews with a safe heuristic:
-    - Drop duplicates on (review_id, customer_name).
-    - Flag conflicts when the same review_id is used by different customers
-      or when the same customer has multiple texts with the same review_id.
+    Enhanced deduplication logic:
+    1. Drop fully empty rows.
+    2. Drop duplicates based on identical review_text.
+    3. Drop duplicates based on composite key:
+       (customer_name, review_text, review_date, restaurant_name).
     """
     before = len(df)
+    df = df.dropna(how="all")
+    logger.info("Dropped %d completely empty rows", before - len(df))
+    before = len(df)
 
-    # Step 1: Detect conflicts (before dropping!)
-    # Case A: same review_id but different customers
-    cust_conflicts = (
-        df.groupby("review_id")["customer_name"]
-          .nunique()
-          .reset_index()
-          .query("customer_name > 1")["review_id"]
-          .tolist()
-    )
+    # Step 2: Drop duplicate review_texts (exact duplicates)
+    if "review_text" in df.columns:
+        df = df.drop_duplicates(subset=["review_text"], keep="first")
+        logger.info("After dropping duplicate texts: %d rows", len(df))
 
-    # Case B: same review_id + customer_name, but >1 unique review_text
-    text_conflicts = (
-        df.groupby(["review_id", "customer_name"])["review_text"]
-          .nunique()
-          .reset_index()
-          .query("review_text > 1")["review_id"]
-          .tolist()
-    )
-
-    conflict_ids = set(cust_conflicts) | set(text_conflicts)
-    if conflict_ids:
-        conflicts = df[df["review_id"].isin(conflict_ids)]
-        logger.warning("Potential review_id conflicts detected: %d rows", len(conflicts))
-        conflicts.to_csv("/tmp/review_conflicts.csv", index=False)
-
-    # Step 2: Drop duplicates safely
-    df = df.drop_duplicates(subset=["review_id", "customer_name"], keep="first")
+    # Step 3: Drop duplicates on key combination
+    key_cols = [c for c in ["customer_name", "review_text", "review_date", "restaurant_name"] if c in df.columns]
+    if key_cols:
+        df = df.drop_duplicates(subset=key_cols, keep="first")
+        logger.info("After composite key deduplication: %d rows", len(df))
 
     after = len(df)
     logger.info("Deduplication reduced rows from %d to %d", before, after)
     return df
+
+def summarize_final_dataset(df: pd.DataFrame):
+    """Log simple demographic distributions to help assess dataset bias."""
+    logger.info("=== Final Dataset Summary ===")
+    logger.info("Total rows: %d", len(df))
+
+    for col in ["gender_norm", "age_group", "ethnicity_norm"]:
+        if col in df.columns:
+            missing = df[col].isna().mean()
+            counts = (
+                df[col]
+                .value_counts(dropna=True)
+                .head(5)
+                .to_dict()
+            )
+            logger.info(
+                "%s → top categories: %s | missing: %.1f%%",
+                col, counts, missing * 100
+            )
+    logger.info("=============================")
+
 
 # ----------------------------
 # Core Classes
@@ -394,17 +403,43 @@ if __name__ == "__main__":
     # ----------------------------
     rest_info_path = DATA_RAW / "tastetrend_restaurant_info.csv"
     restaurant_info = pd.read_csv(rest_info_path)
-
-    # Normalize schema
-    restaurant_info.columns = [
-        c.strip().lower().replace(" ", "_") for c in restaurant_info.columns
-    ]
+    restaurant_info.columns = [c.strip().lower().replace(" ", "_") for c in restaurant_info.columns]
 
     logger.info(f"Loaded restaurant metadata: {len(restaurant_info):,} rows")
-    logger.debug("Restaurant info preview:\n%s", restaurant_info.head())
+
+    # Keep only lightweight joinable columns for final enrichment
+    rest_info_join = restaurant_info[["restaurant_name", "avg_stars", "total_reviews"]].drop_duplicates()
+
+    # Merge with reviews on restaurant_name
+    if "restaurant_name" in reviews.columns:
+        reviews = reviews.merge(rest_info_join, on="restaurant_name", how="left")
+        logger.info("Joined restaurant metadata to reviews; columns added: %s", rest_info_join.columns.tolist())
 
     # ----------------------------
-    # 3. Save snapshot (local only)
+    # 3. Sum descriptive statistics to check for bias
+    # ----------------------------
+
+    summarize_final_dataset(reviews)
+
+    bias_summary = {}
+    for col in ["gender_norm", "age_group", "ethnicity_norm"]:
+        if col in reviews.columns:
+            counts = reviews[col].value_counts(dropna=False).to_dict()
+            missing_pct = float(reviews[col].isna().mean() * 100)
+            bias_summary[col] = {
+                "counts": counts,
+                "missing_pct": round(missing_pct, 2)
+            }
+
+    # Save locally
+    if not os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        BIAS_PATH = PROJECT_ROOT / "data" / "bias_summary.json"
+        with open(BIAS_PATH, "w", encoding="utf-8") as f:
+            json.dump(bias_summary, f, indent=2)
+        logger.info(f"Saved bias summary to: {BIAS_PATH}")
+
+    # ----------------------------
+    # 4. Save snapshot (local only)
     # ----------------------------
     if not os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
         SNAP_PATH = PROJECT_ROOT / "data" / "processed_exploration.parquet"
@@ -412,3 +447,14 @@ if __name__ == "__main__":
         cols_to_save = [c for c in cols_to_save if c in reviews.columns]
         reviews[cols_to_save].to_parquet(SNAP_PATH, index=False)
         logger.info(f"Saved exploration snapshot to: {SNAP_PATH}")
+
+    # ----------------------------
+    # 5. Save final dataset
+    # ----------------------------
+    if not os.environ.get("AWS_LAMBDA_FUNCTION_NAME"):
+        FINAL_PATH = PROJECT_ROOT / "data" / "processed_final.parquet"
+        reviews.to_parquet(FINAL_PATH, index=False)
+        logger.info(f"Saved final combined dataset to: {FINAL_PATH}")
+
+    #The end of the job
+    logger.info("ETL pipeline completed successfully.")

@@ -10,6 +10,7 @@ import json
 import boto3
 from pathlib import Path
 import traceback
+import pandas as pd
 
 from etl import ReviewLoader, FileSpec, SYNONYMS, read_table_any
 from utils.logger import get_logger
@@ -17,6 +18,17 @@ from etl_validation import validate_with_integrity, save_validation_report
 
 logger = get_logger(__name__)
 s3 = boto3.client("s3")
+
+
+def safe_json_dict(d: dict) -> dict:
+    """Convert keys to strings and replace NaN/NA keys with 'NA'."""
+    clean = {}
+    for k, v in d.items():
+        if pd.isna(k):
+            clean["NA"] = v
+        else:
+            clean[str(k)] = v
+    return clean
 
 
 def lambda_handler(event, context):
@@ -88,19 +100,62 @@ def lambda_handler(event, context):
                 s3.upload_file(str(processed_local), processed_bucket, processed_key)
 
                 processed_files.append(processed_key)
-
-                # Add to validation input
                 all_data.append((df_raw, df_processed, key))
 
             # 5. Run combined validation across all datasets
             validation_report = validate_with_integrity(all_data, context=context)
 
-            # Save + upload combined validation report
+            # Save + upload validation report
             validation_local = Path("/tmp/validation_combined.json")
             save_validation_report(validation_report, validation_local)
             validation_key = "processed/validation_combined.json"
             s3.upload_file(str(validation_local), processed_bucket, validation_key)
             logger.info("Validation report uploaded to s3://%s/%s", processed_bucket, validation_key)
+
+            # 5A. Combine all processed data before validation
+            if all_data:
+                logger.info("Combining all processed DataFrames into a single dataset...")
+                combined_df = pd.concat(
+                    [df_processed for _, df_processed, _ in all_data],
+                    ignore_index=True
+                )
+
+                # Regenerate clean sequential review_id to remove any conflicts
+                combined_df["review_id"] = range(1, len(combined_df) + 1)
+
+                # Save combined dataset locally
+                combined_local = Path("/tmp/processed_final.parquet")
+                combined_df.to_parquet(combined_local, index=False)
+
+                combined_key = "processed/processed_final.parquet"
+                s3.upload_file(str(combined_local), processed_bucket, combined_key)
+                logger.info(f"Uploaded combined final dataset to s3://{processed_bucket}/{combined_key}")
+
+                # ----------------------------
+                # 5B. Generate, log, and upload bias summary
+                # ----------------------------
+                bias_summary = {}
+                for col in ["gender_norm", "age_group", "ethnicity_norm"]:
+                    if col in combined_df.columns:
+                        counts = combined_df[col].value_counts(dropna=False).to_dict()
+                        counts = safe_json_dict(counts)
+                        missing_pct = float(combined_df[col].isna().mean() * 100)
+                        bias_summary[col] = {
+                            "counts": counts,
+                            "missing_pct": round(missing_pct, 2)
+                        }
+
+                        # Log distribution directly to CloudWatch
+                        logger.info(f"[BIAS SUMMARY] {col}: {counts} (Missing: {round(missing_pct, 2)}%)")
+
+                # Upload bias summary JSON
+                bias_local = Path("/tmp/bias_summary.json")
+                with open(bias_local, "w", encoding="utf-8") as f:
+                    json.dump(bias_summary, f, indent=2)
+
+                bias_key = "processed/bias_summary.json"
+                s3.upload_file(str(bias_local), processed_bucket, bias_key)
+                logger.info(f"Uploaded bias summary to s3://{processed_bucket}/{bias_key}")
 
             # 6. Response body
             response_body = {
@@ -127,10 +182,10 @@ def lambda_handler(event, context):
                 "body": json.dumps(response_body)
             }
 
-        # Fallback if action not recognized
+        # Fallback for unknown actions
         return {
             "statusCode": 400,
-            "body": json.dumps({"error": f"Unknown action: {action}"} )
+            "body": json.dumps({"error": f"Unknown action: {action}"})
         }
 
     except Exception as e:
