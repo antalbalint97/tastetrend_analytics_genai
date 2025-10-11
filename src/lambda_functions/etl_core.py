@@ -61,7 +61,7 @@ def handle_etl(event, context):
             return {"statusCode": 404, "body": json.dumps({"error": "No files found in bucket"})}
 
         account_id = context.invoked_function_arn.split(":")[4]
-        processed_bucket = f"tastetrend-dev-processed-{account_id}"
+        processed_bucket = f"tastetrend-poc-processed-{account_id}"
 
         loader = ReviewLoader(SYNONYMS)
         all_data = []
@@ -130,6 +130,32 @@ def handle_etl(event, context):
         combined_key = "processed/processed_final.parquet"
         s3.upload_file(str(combined_local), processed_bucket, combined_key)
         logger.info("Uploaded combined final dataset to s3://%s/%s", processed_bucket, combined_key)
+
+        # -------------------------------------------------------------
+        # 6.1 Also export combined CSV for embedding Lambda
+        # -------------------------------------------------------------
+        try:
+            combined_csv_local = Path("/tmp/processed_final.csv")
+            combined_df.to_csv(combined_csv_local, index=False)
+            combined_csv_key = "processed/processed_final.csv"
+            s3.upload_file(str(combined_csv_local), processed_bucket, combined_csv_key)
+            logger.info("Uploaded combined CSV to s3://%s/%s", processed_bucket, combined_csv_key)
+        except Exception as e:
+            logger.error("Failed to export combined CSV: %s", e)
+
+        # -------------------------------------------------------------
+        # 6.2 Debug: Verify uploaded processed files
+        # -------------------------------------------------------------
+        try:
+            list_resp = s3.list_objects_v2(Bucket=processed_bucket, Prefix="processed/")
+            if "Contents" in list_resp:
+                logger.info("Processed files found in s3://%s/processed/:", processed_bucket)
+                for obj in list_resp["Contents"]:
+                    logger.info("  %s (%d bytes)", obj["Key"], obj["Size"])
+            else:
+                logger.warning("No processed files found in bucket.")
+        except Exception as e:
+            logger.error("Failed to list processed files: %s", e)
 
         # -------------------------------------------------------------
         # 7. Bias Summary

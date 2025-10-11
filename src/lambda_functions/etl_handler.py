@@ -15,7 +15,7 @@ from utils.logger import get_logger
 import os
 
 # reuse your existing ETL implementation
-from etl_core import handle_etl as _run_etl
+from .etl_core import handle_etl as _run_etl
 
 logger = get_logger(__name__)
 lambda_client = boto3.client("lambda")
@@ -40,30 +40,36 @@ def handler(event, context):
         # 2) Optionally trigger the embedding job (async) after ETL
         if event.get("trigger_embedding"):
             processed_bucket = body.get("processed_bucket")
-            parquet_key      = "processed/processed_final.parquet"
-            os_index         = event.get("os_index", "reviews_v1")
+            csv_key = "processed/processed_final.csv"
+            os_index = event.get("os_index", "reviews_v1")
 
             if not processed_bucket:
-                return {"statusCode": 500, "body": json.dumps({"error": "Missing processed_bucket from ETL result"})}
+                return {
+                    "statusCode": 500,
+                    "body": json.dumps({"error": "Missing processed_bucket from ETL result"})
+                }
 
             invoke_payload = {
-                "s3_parquet_uri": f"s3://{processed_bucket}/{parquet_key}",
+                "s3_csv_uri": f"s3://{processed_bucket}/{csv_key}",
                 "os_index": os_index
             }
 
             logger.info("[Orchestrator] Invoking embedding Lambda with %s", invoke_payload)
 
             lambda_client.invoke(
-                FunctionName = os.environ.get("EMBEDDING_LAMBDA_ARN") or os.environ.get("EMBEDDING_LAMBDA_NAME"),
-                InvocationType = "Event",  # async
-                Payload = json.dumps(invoke_payload).encode("utf-8")
+                FunctionName=os.environ.get("EMBEDDING_LAMBDA_ARN") or os.environ.get("EMBEDDING_LAMBDA_NAME"),
+                InvocationType="Event",  # async
+                Payload=json.dumps(invoke_payload).encode("utf-8")
             )
 
             body["embedding_triggered"] = True
-            body["embedding_index"]     = os_index
+            body["embedding_index"] = os_index
 
         return {"statusCode": 200, "body": json.dumps(body)}
 
     except Exception as e:
         logger.error("ETL handler exception: %s", e, exc_info=True)
-        return {"statusCode": 500, "body": json.dumps({"error": str(e), "traceback": traceback.format_exc()})}
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": str(e), "traceback": traceback.format_exc()}),
+        }

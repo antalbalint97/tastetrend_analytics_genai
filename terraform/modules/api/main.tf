@@ -1,24 +1,60 @@
-variable "lambda_arn" {}
-variable "api_name" { default = "tt-api" }
+#############################################
+# Variables
+#############################################
 
+variable "lambda_arn" {
+  description = "ARN of the Lambda function to integrate with API Gateway"
+  type        = string
+}
+
+variable "api_name" {
+  description = "Name of the API Gateway instance"
+  type        = string
+  default     = "tt-api"
+}
+
+
+#############################################
+# API Gateway Configuration
+#############################################
+
+# Create the HTTP API
 resource "aws_apigatewayv2_api" "http" {
   name          = var.api_name
   protocol_type = "HTTP"
 }
 
+
+#############################################
+# Lambda Integration
+#############################################
+
+# Connect Lambda as a proxy integration
 resource "aws_apigatewayv2_integration" "lambda" {
-  api_id             = aws_apigatewayv2_api.http.id
-  integration_type   = "AWS_PROXY"
-  integration_uri    = var.lambda_arn
-  payload_format_version = "2.0"
+  api_id                  = aws_apigatewayv2_api.http.id
+  integration_type        = "AWS_PROXY"
+  integration_uri         = var.lambda_arn
+  payload_format_version  = "2.0"
 }
 
+
+#############################################
+# Routes
+#############################################
+
+# Define POST /query route
 resource "aws_apigatewayv2_route" "post_query" {
   api_id    = aws_apigatewayv2_api.http.id
   route_key = "POST /query"
   target    = "integrations/${aws_apigatewayv2_integration.lambda.id}"
 }
 
+
+#############################################
+# Lambda Permissions
+#############################################
+
+# Allow API Gateway to invoke the Lambda function
 resource "aws_lambda_permission" "apigw" {
   statement_id  = "AllowAPIGWInvoke"
   action        = "lambda:InvokeFunction"
@@ -27,4 +63,25 @@ resource "aws_lambda_permission" "apigw" {
   source_arn    = "${aws_apigatewayv2_api.http.execution_arn}/*/*"
 }
 
-output "invoke_url" { value = aws_apigatewayv2_api.http.api_endpoint }
+
+#############################################
+# API Deployment & Stage
+#############################################
+
+# Auto-deploy all routes under the $default stage
+resource "aws_apigatewayv2_stage" "default" {
+  api_id      = aws_apigatewayv2_api.http.id
+  name        = "$default"
+  auto_deploy = true
+}
+
+
+#############################################
+# Outputs
+#############################################
+
+# Public invoke URL for the API Gateway
+output "invoke_url" {
+  description = "Base invoke URL for the deployed API Gateway"
+  value       = aws_apigatewayv2_api.http.api_endpoint
+}

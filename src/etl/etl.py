@@ -23,6 +23,7 @@ import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Dict, List
+import uuid
 
 import numpy as np
 import pandas as pd
@@ -354,6 +355,11 @@ class ReviewLoader:
 
         # Deduplicate here
         df = deduplicate_reviews(df)
+        
+        df["unique_id"] = df.apply(
+            lambda x: f"{x.get('restaurant_name', 'NA')}_{x.get('review_date', 'NA')}_{uuid.uuid4().hex[:8]}",
+            axis=1
+        )
 
         expected_cols = STANDARD_COLS + ["gender_norm", "ethnicity_norm", "age_group"]
         available_cols = [c for c in expected_cols if c in df.columns]
@@ -458,3 +464,79 @@ if __name__ == "__main__":
 
     #The end of the job
     logger.info("ETL pipeline completed successfully.")
+
+
+def lambda_handler(event=None, context=None):
+    """
+    AWS Lambda entry point for the TasteTrend ETL pipeline.
+    Reads raw files from S3, processes them, and uploads processed output.
+    """
+    import boto3
+    import tempfile
+
+    logger.info("Starting ETL Lambda execution...")
+
+    s3 = boto3.client("s3")
+
+    raw_bucket = os.environ.get("RAW_BUCKET")
+    processed_bucket = os.environ.get("PROCESSED_BUCKET")
+
+    # Local temp folder for Lambda
+    tmp_dir = Path(tempfile.gettempdir()) / "etl"
+    tmp_dir.mkdir(exist_ok=True)
+    local_raw = tmp_dir / "raw"
+    local_raw.mkdir(exist_ok=True)
+
+    # List of expected raw files
+    raw_files = [
+        "tastetrend_downtown_reviews.csv",
+        "tastetrend_eastside_reviews.csv",
+        "tastetrend_midtown_reviews.txt",
+        "tastetrend_uptown_reviews.csv",
+        "tastetrend_restaurant_info.csv",
+    ]
+
+    # Download each from S3
+    for fname in raw_files:
+        dest = local_raw / fname
+        logger.info(f"Downloading s3://{raw_bucket}/{fname} → {dest}")
+        s3.download_file(raw_bucket, fname, str(dest))
+
+    # Reuse your ETL logic
+    review_files = [
+        FileSpec(local_raw / "tastetrend_downtown_reviews.csv", "downtown"),
+        FileSpec(local_raw / "tastetrend_eastside_reviews.csv", "eastside"),
+        FileSpec(local_raw / "tastetrend_midtown_reviews.txt", "midtown"),
+        FileSpec(local_raw / "tastetrend_uptown_reviews.csv", "uptown"),
+    ]
+
+    loader = ReviewLoader(SYNONYMS)
+    frames = [loader.load_and_standardize(f) for f in review_files]
+    reviews = pd.concat(frames, ignore_index=True)
+    logger.info(f"Combined review rows: {len(reviews):,}")
+
+    # Join restaurant metadata
+    rest_info = pd.read_csv(local_raw / "tastetrend_restaurant_info.csv")
+    rest_info.columns = [c.strip().lower().replace(" ", "_") for c in rest_info.columns]
+    rest_info_join = rest_info[["restaurant_name", "avg_stars", "total_reviews"]].drop_duplicates()
+
+    if "restaurant_name" in reviews.columns:
+        reviews = reviews.merge(rest_info_join, on="restaurant_name", how="left")
+
+    # Save processed parquet
+    # processed_path = tmp_dir / "processed_final.parquet"
+    # processed_path = tmp_dir / "processed_final.jsonl"
+    processed_path = tmp_dir / "processed_final.csv"
+    reviews.to_csv(processed_path, index=False, encoding="utf-8", quoting=1)
+    # reviews.to_parquet(processed_path, index=False)
+    # reviews.to_json(processed_path, orient="records", lines=True)
+    logger.info(f"Saved processed dataset locally to {processed_path}")
+
+    # Upload processed dataset to S3
+    # s3.upload_file(str(processed_path), processed_bucket, "processed_final.jsonl")
+    # s3.upload_file(str(processed_path), processed_bucket, "processed_final.parquet")
+    s3.upload_file(str(processed_path), processed_bucket, "processed_final.csv")
+    # logger.info(f"Uploaded processed dataset to s3://{processed_bucket}/processed_final.parquet")
+    logger.info(f"Uploaded processed dataset to s3://{processed_bucket}/processed_final.csv")
+
+    return {"statusCode": 200, "body": "ETL pipeline completed successfully"}

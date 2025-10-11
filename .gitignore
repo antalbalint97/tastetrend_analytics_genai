@@ -37,6 +37,7 @@ venv/
 crash.log
 *.auto.tfvars
 *.tfvars
+*.tfstate.*
 
 # ----------------
 # VS Code / IDE
@@ -73,6 +74,20 @@ lambda.zip
 tmp/
 deployment/
 
+#--------------
+#RAG solution without Bedrock Agent
+#---------------
+rag/
+
 # Local Lambda and test payloads
 event_*.json
 response_*.json
+
+# Other
+out_embed.json
+out_etl.json
+verify_count.py
+out.json
+validation_combined.json
+embed_payload.json
+etl_payload.json

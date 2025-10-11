@@ -1,6 +1,6 @@
 import os, time, json, uuid, requests
 
-API_URL = os.environ["TT_API_URL"]      # from Terraform output
+API_URL = os.environ["TT_API_URL"]
 API_KEY = os.environ["TT_API_KEY"]
 
 def ask(query, conversation_id=None, timeout=15):

@@ -8,7 +8,7 @@
 resource "aws_lambda_function" "this" {
   function_name = var.function_name
   role          = var.role_arn
-  handler       = "lambda.api_handler.lambda_handler"
+  handler       = "lambda_functions.etl_handler.handler"
   runtime       = "python3.11"
 
   # Use pre-uploaded artifact from S3

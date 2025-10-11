@@ -18,9 +18,17 @@ variable "master_user_arn" {
   type        = string
 }
 
+variable "allowed_principals" {
+  description = "List of IAM ARNs allowed to access the OpenSearch domain"
+  type        = list(string)
+}
+
 #############################################
 # OpenSearch Domain
 #############################################
+data "aws_caller_identity" "current" {}
+data "aws_region" "current" {}
+
 resource "aws_opensearch_domain" "this" {
   domain_name = var.domain_name
 
@@ -52,19 +60,27 @@ resource "aws_opensearch_domain" "this" {
     tls_security_policy = "Policy-Min-TLS-1-2-2019-07"
   }
 
-  advanced_security_options {
-    enabled                        = true
-    internal_user_database_enabled = false
-    master_user_options {
-      master_user_arn = var.master_user_arn
-    }
-  }
+  # Access policy includes both your IAM user and Lambda role
+  access_policies = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          AWS = var.allowed_principals
+        },
+        Action   = "es:*",
+        Resource = "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.domain_name}/*"
+      }
+    ]
+  })
 
   tags = {
     Module  = "OpenSearch"
     Purpose = "POC"
   }
 }
+
 
 #############################################
 # Outputs
@@ -77,4 +93,9 @@ output "domain_name" {
 output "endpoint" {
   description = "OpenSearch endpoint URL"
   value       = aws_opensearch_domain.this.endpoint
+}
+
+output "domain_arn" {
+  description = "ARN of the OpenSearch domain"
+  value       = aws_opensearch_domain.this.arn
 }
