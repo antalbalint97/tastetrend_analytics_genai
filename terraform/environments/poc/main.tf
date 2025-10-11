@@ -78,8 +78,8 @@ module "artifacts" {
 # IAM Role for Lambda
 #############################################
 module "iam" {
-  source       = "../../modules/iam"
-  lambda_name  = local.lambda_name
+  source      = "../../modules/iam"
+  lambda_name = local.lambda_name
   bucket_names = [
     module.raw.name,
     module.processed.name
@@ -96,9 +96,14 @@ resource "aws_kms_key" "os" {
 
 module "opensearch" {
   source          = "../../modules/opensearch"
-  domain_name     = "tastetrend-dev"
+  domain_name     = "tastetrend-poc"
   kms_key_arn     = aws_kms_key.os.arn
   master_user_arn = "arn:aws:iam::${data.aws_caller_identity.me.account_id}:user/${var.master_user_name}"
+
+  allowed_principals = [
+    data.aws_caller_identity.me.arn,
+    module.iam.role_arn
+  ]
 }
 
 #############################################
@@ -134,9 +139,9 @@ module "lambda_embedding" {
   os_index    = "tastetrend-reviews"
   kms_key_arn = aws_kms_key.os.arn
 
-  # Added for consistent artifact deployment
-  zip_bucket  = local.zip_bucket
-  zip_key     = local.zip_key
+  # Consistent artifact deployment
+  zip_bucket = local.zip_bucket
+  zip_key    = local.zip_key
 }
 
 #############################################
@@ -144,16 +149,33 @@ module "lambda_embedding" {
 #############################################
 module "lambda_proxy" {
   source       = "../../modules/lambda/proxy"
-  agent_id     = "tastetrend-agent-poc"
-  agent_alias  = "poc-agent"
+  agent_id     = var.agent_id
+  agent_alias  = var.agent_alias
   api_key_hash = var.api_key_hash
   kms_key_arn  = aws_kms_key.os.arn
 
-  # Required for Lambda deployment
-  zip_bucket   = local.zip_bucket
-  zip_key      = local.zip_key
+  zip_bucket = local.zip_bucket
+  zip_key    = local.zip_key
 }
 
+#############################################
+# Bedrock Agent
+#############################################
+module "bedrock_agent" {
+  source      = "../../modules/bedrock_agent"
+  agent_name  = "tastetrend-agent"
+  kms_key_arn = aws_kms_key.os.arn
+  role_arn    = module.iam.role_arn
+}
+
+#############################################
+# API Gateway for Bedrock Agent Proxy
+#############################################
+module "api_gateway" {
+  source      = "../../modules/api"
+  lambda_arn  = module.lambda_proxy.lambda_arn
+  api_name    = "tt-api"
+}
 
 #############################################
 # Outputs

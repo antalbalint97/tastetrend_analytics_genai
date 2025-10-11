@@ -36,3 +36,13 @@ variable "master_user_name" {
   description = "Name of the master user for the OpenSearch domain"
   type        = string
 }
+
+variable "agent_id" {
+  description = "Bedrock Agent ID"
+  type        = string
+}
+
+variable "agent_alias" {
+  description = "Bedrock Agent Alias ID"
+  type        = string
+}
