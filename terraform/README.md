@@ -11,7 +11,6 @@ This project provisions a full GenAI pipeline integrating **Amazon Bedrock**, **
 1. **S3 Buckets** – Store raw, processed, and deployment artifacts.
 2. **Lambda (ETL, Embedding, Proxy)** – Handle data processing, vector embedding, and API routing.
 3. **OpenSearch Domain** – Hosts the vector index for semantic search.
-4. **Knowledge Base (Bedrock)** – Uses OpenSearch as storage for embeddings.
 5. **Bedrock Agent** – Interacts with the Knowledge Base to power GenAI queries.
 6. **API Gateway** – Exposes the Bedrock Agent through an HTTP endpoint.
 7. **IAM** – Provides least-privilege roles for Lambdas, EC2, and Bedrock services.
