@@ -23,5 +23,16 @@ variable "lambda_version" {
 variable "env" {
   type        = string
   description = "Deployment environment (e.g., dev, staging, prod)"
-  default     = "dev"
+  default     = "poc"
+}
+
+variable "api_key_hash" {
+  description = "Hashed API key for Lambda authorization"
+  type        = string
+  sensitive   = true
+}
+
+variable "master_user_name" {
+  description = "Name of the master user for the OpenSearch domain"
+  type        = string
 }

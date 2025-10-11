@@ -54,7 +54,7 @@ def embed(q: str):
 
 
 # --- Main Search Logic ---
-def search(q: str, k=6, filters=None, ef_search=128):
+def search(q: str, k=6, filters=None):
     """Perform vector similarity search with optional metadata filters."""
     vec = embed(q)
     query = {
@@ -82,13 +82,32 @@ def search(q: str, k=6, filters=None, ef_search=128):
             "query": {
                 "bool": {
                     "filter": filter_clauses,
-                    "must": [query["query"]]
+                    "must": [
+                        {
+                            "knn": {
+                                "field": "vector",
+                                "query_vector": vec,
+                                "k": k
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    else:
+        query = {
+            "size": k,
+            "query": {
+                "knn": {
+                    "field": "vector",
+                    "query_vector": vec,
+                    "k": k
                 }
             }
         }
 
-    params = {"knn.algo_param.ef_search": ef_search}
-    res = es.search(index=OS_INDEX, body=query, params=params)
+    # Removed unsupported parameter for AOSS
+    res = es.search(index=OS_INDEX, body=query)
     hits = res["hits"]["hits"]
     return [{"score": h["_score"], **h["_source"]} for h in hits]
 

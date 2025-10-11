@@ -35,6 +35,8 @@ venv/
 .terraform/
 .terraform.lock.hcl
 crash.log
+*.auto.tfvars
+*.tfvars
 
 # ----------------
 # VS Code / IDE
@@ -69,6 +71,7 @@ lambda.zip
 *.tar.gz
 *.zip
 tmp/
+deployment/
 
 # Local Lambda and test payloads
 event_*.json

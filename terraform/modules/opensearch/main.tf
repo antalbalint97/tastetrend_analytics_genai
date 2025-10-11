@@ -1,113 +1,80 @@
 #############################################
-# OPENSEARCH SERVERLESS SETUP - TASTETREND  #
+# Module: OpenSearch Domain
+# Purpose: Deploy a secure, cost-controlled OpenSearch domain
 #############################################
 
-# ---- OpenSearch Serverless Collection ----
-resource "aws_opensearchserverless_collection" "tastetrend" {
-  name        = "tastetrend-rag"
-  type        = "SEARCH"
-  description = "Serverless collection for TasteTrend RAG embeddings"
+variable "domain_name" {
+  description = "Name of the OpenSearch domain"
+  type        = string
 }
 
-# ---- Encryption Policy ----
-resource "aws_opensearchserverless_security_policy" "encryption" {
-  name        = "tastetrend-encryption"
-  type        = "encryption"
-  description = "Encryption policy for TasteTrend collection"
-
-  policy = jsonencode({
-    Rules = [
-      {
-        ResourceType = "collection"
-        Resource     = [
-          "collection/${aws_opensearchserverless_collection.tastetrend.name}"
-        ]
-      }
-    ]
-    AWSOwnedKey = true
-  })
+variable "kms_key_arn" {
+  description = "KMS key ARN for encryption at rest"
+  type        = string
 }
 
-# ---- Access Policy (EC2 + Lambda Principals - Least Privilege) ----
-resource "aws_opensearchserverless_access_policy" "access" {
-  name        = "tastetrend-access"
-  type        = "data"
-  description = "Allow Lambda and EC2 roles to read/write documents and manage indexes in the TasteTrend collection"
+variable "master_user_arn" {
+  description = "IAM ARN for the master user of the domain"
+  type        = string
+}
 
-  policy = jsonencode([
-    {
-      Rules = [
-        {
-          ResourceType = "index",
-          Resource     = ["index/${aws_opensearchserverless_collection.tastetrend.name}/*"],
-          Permission   = [
-            # --- Document-level operations ---
-            "aoss:ReadDocument",
-            "aoss:WriteDocument",
+#############################################
+# OpenSearch Domain
+#############################################
+resource "aws_opensearch_domain" "this" {
+  domain_name = var.domain_name
 
-            # --- Index-level operations ---
-            "aoss:CreateIndex",
-            "aoss:UpdateIndex",
-            "aoss:DescribeIndex",
-            "aoss:DeleteIndex"
-          ]
-        }
-      ],
-      Principal = concat(
-        var.lambda_role_arns,
-        ["arn:aws:iam::550744777598:role/tastetrend-ec2-ingest-role"]
-      )
+  engine_version = "OpenSearch_2.11"
+
+  cluster_config {
+    instance_type          = "t3.small.search"
+    instance_count         = 1
+    zone_awareness_enabled = false
+  }
+
+  ebs_options {
+    ebs_enabled = true
+    volume_type = "gp3"
+    volume_size = 10
+  }
+
+  encrypt_at_rest {
+    enabled    = true
+    kms_key_id = var.kms_key_arn
+  }
+
+  node_to_node_encryption {
+    enabled = true
+  }
+
+  domain_endpoint_options {
+    enforce_https       = true
+    tls_security_policy = "Policy-Min-TLS-1-2-2019-07"
+  }
+
+  advanced_security_options {
+    enabled                        = true
+    internal_user_database_enabled = false
+    master_user_options {
+      master_user_arn = var.master_user_arn
     }
-  ])
-}
+  }
 
-# ---- Network Policy (Public Access for PoC) ----
-resource "aws_opensearchserverless_security_policy" "network" {
-  name        = "tastetrend-network"
-  type        = "network"
-  description = "Allow public access to the TasteTrend collection (PoC only)"
-
-  policy = jsonencode([
-    {
-      Rules = [
-        {
-          ResourceType = "collection"
-          Resource     = [
-            "collection/${aws_opensearchserverless_collection.tastetrend.name}"
-          ]
-        }
-      ]
-      AllowFromPublic = true
-    }
-  ])
+  tags = {
+    Module  = "OpenSearch"
+    Purpose = "POC"
+  }
 }
 
 #############################################
 # Outputs
 #############################################
-
-# Collection ARN
-output "opensearch_collection_arn" {
-  description = "ARN of the OpenSearch Serverless collection for TasteTrend"
-  value       = aws_opensearchserverless_collection.tastetrend.arn
+output "domain_name" {
+  description = "Name of the OpenSearch domain"
+  value       = aws_opensearch_domain.this.domain_name
 }
 
-# Collection Endpoint
 output "endpoint" {
-  description = "The OpenSearch Serverless collection endpoint (used by API Lambda)"
-  value       = aws_opensearchserverless_collection.tastetrend.collection_endpoint
-}
-
-output "collection_endpoint" {
-  value       = aws_opensearchserverless_collection.tastetrend.collection_endpoint
-  description = "HTTPS endpoint for the TasteTrend OpenSearch Serverless collection"
-}
-
-#############################################
-# Variables
-#############################################
-
-variable "lambda_role_arns" {
-  description = "List of IAM role ARNs that should have access to the OpenSearch collection"
-  type        = list(string)
+  description = "OpenSearch endpoint URL"
+  value       = aws_opensearch_domain.this.endpoint
 }
