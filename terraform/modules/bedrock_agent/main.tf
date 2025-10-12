@@ -16,18 +16,25 @@ variable "role_arn" {
   type        = string
 }
 
+variable "search_lambda_arn" {
+  description = "ARN of the Lambda used for the search_reviews action group"
+  type        = string
+}
+
+
 #############################################
 # Bedrock Agent
 #############################################
 resource "aws_bedrockagent_agent" "agent" {
   agent_name                  = var.agent_name
   description                 = "TasteTrend GenAI PoC Agent"
-  instruction                 = "You are TasteTrend’s restaurant analyst. Summarize customer sentiment and highlight insights from reviews using the data processed through the OpenSearch RAG pipeline."
-  foundation_model            = "arn:aws:bedrock:eu-central-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0"
+  instruction                 = file("${path.module}/instructions.txt")
+  foundation_model            = "arn:aws:bedrock:eu-central-1::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
   idle_session_ttl_in_seconds = 600
   customer_encryption_key_arn = var.kms_key_arn
   agent_resource_role_arn     = var.role_arn
 }
+
 
 #############################################
 # Bedrock Agent Alias
@@ -37,6 +44,27 @@ resource "aws_bedrockagent_agent_alias" "alias" {
   agent_alias_name = "prod"
   description      = "Production alias for TasteTrend Agent"
 }
+
+#############################################
+# Bedrock Action Group (inline schema, shortened)
+#############################################
+resource "aws_bedrockagent_agent_action_group" "srch" {
+  agent_id          = aws_bedrockagent_agent.agent.id
+  agent_version     = "DRAFT"
+  action_group_name = "srch"
+  description       = "Search restaurant review data"
+
+  action_group_executor {
+    lambda = var.search_lambda_arn
+  }
+
+  api_schema {
+    payload = file("${path.module}/search_v1.json")
+  }
+
+  action_group_state = "ENABLED"
+}
+
 
 #############################################
 # Outputs

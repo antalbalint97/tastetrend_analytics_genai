@@ -1,4 +1,9 @@
 #############################################
+# Data Sources
+#############################################
+data "aws_caller_identity" "me" {}
+
+#############################################
 # Lambda Proxy
 #############################################
 
@@ -36,25 +41,41 @@ resource "aws_lambda_function" "proxy" {
   }
 }
 
+#############################################
+# Bedrock Access Policy
+#############################################
+
+data "aws_region" "current" {}
+
 resource "aws_iam_role_policy" "proxy_bedrock_access" {
   name = "proxy-bedrock-access"
   role = aws_iam_role.proxy.id
 
   policy = jsonencode({
-    Version = "2012-10-17"
+    Version = "2012-10-17",
     Statement = [
       {
-        Effect   = "Allow"
+        Sid      = "AllowBedrockAgentInvoke",
+        Effect   = "Allow",
         Action   = [
-          "bedrock-agent-runtime:InvokeAgent",
-          "bedrock:InvokeModel"
-        ]
+          "bedrock:InvokeAgent",
+          "bedrock-agent-runtime:InvokeAgent"
+        ],
+        Resource = "arn:aws:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.me.account_id}:agent-alias/${var.agent_id}/${var.agent_alias}"
+      },
+      {
+        Sid      = "AllowDescribeListAgents",
+        Effect   = "Allow",
+        Action   = [
+          "bedrock:ListAgents",
+          "bedrock:GetAgent",
+          "bedrock:GetAgentAlias"
+        ],
         Resource = "*"
       }
     ]
   })
 }
-
 #############################################
 # Attach AWS Basic Execution Role (Logging)
 #############################################

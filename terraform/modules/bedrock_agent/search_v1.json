@@ -1,0 +1,62 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "Search Reviews API",
+    "version": "1.0.0",
+    "contact": {
+      "name": "TasteTrend AI System",
+      "email": "support@tastetrend.ai"
+    }
+  },
+  "paths": {
+    "/search": {
+      "post": {
+        "summary": "Search reviews",
+        "description": "Search for restaurant reviews based on a query string.",
+        "operationId": "srch",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["q"],
+                "properties": {
+                  "q": {
+                    "type": "string",
+                    "description": "Query string to search restaurant reviews"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful search",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "res": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "r": { "type": "string" },
+                          "id": { "type": "string" },
+                          "t": { "type": "string" }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

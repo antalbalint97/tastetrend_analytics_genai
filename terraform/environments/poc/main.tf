@@ -159,22 +159,42 @@ module "lambda_proxy" {
 }
 
 #############################################
-# Bedrock Agent
+# Lambda - Search Reviews (RAG Tool)
+#############################################
+module "lambda_search_reviews" {
+  source          = "../../modules/lambda/search_reviews"
+  lambda_role_arn = module.iam.role_arn
+  opensearch_url  = module.opensearch.endpoint
+  index_name      = "tastetrend-reviews"
+  zip_bucket      = local.zip_bucket
+  zip_key         = "lambda/search-reviews-${var.lambda_version}.zip"
+  lambda_version  = var.lambda_version
+
+  depends_on = [
+    module.opensearch,
+    module.iam
+  ]
+}
+
+#############################################
+# Bedrock Agent (with Action Group)
 #############################################
 module "bedrock_agent" {
-  source      = "../../modules/bedrock_agent"
-  agent_name  = "tastetrend-agent"
-  kms_key_arn = aws_kms_key.os.arn
-  role_arn    = module.iam.role_arn
+  source            = "../../modules/bedrock_agent"
+  agent_name        = "tastetrend-agent"
+  kms_key_arn       = aws_kms_key.os.arn
+  role_arn          = module.iam.role_arn
+  search_lambda_arn = module.lambda_search_reviews.lambda_arn
 }
+
 
 #############################################
 # API Gateway for Bedrock Agent Proxy
 #############################################
 module "api_gateway" {
-  source      = "../../modules/api"
-  lambda_arn  = module.lambda_proxy.lambda_arn
-  api_name    = "tt-api"
+  source     = "../../modules/api"
+  lambda_arn = module.lambda_proxy.lambda_arn
+  api_name   = "tt-api"
 }
 
 #############################################

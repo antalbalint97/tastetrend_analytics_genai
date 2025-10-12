@@ -146,6 +146,60 @@ output "role_arn" {
 }
 
 #############################################
+# EXTRA POLICY: search_reviews Lambda (Bedrock + OpenSearch + Logs + KMS)
+#############################################
+
+resource "aws_iam_policy" "search_reviews_policy" {
+  name = "${var.lambda_name}-search-reviews"
+  description = "Allow Bedrock embeddings, OpenSearch queries, CloudWatch logging, and optional KMS decrypt for search_reviews Lambda"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Sid    = "AllowBedrockEmbedding",
+        Effect = "Allow",
+        Action = [
+          "bedrock:InvokeModel"
+        ],
+        Resource = "arn:aws:bedrock:eu-central-1::foundation-model/amazon.titan-embed-text-v2:0"
+      },
+      {
+        Sid    = "AllowOpenSearchAccess",
+        Effect = "Allow",
+        Action = [
+          "es:ESHttpPost",
+          "es:ESHttpGet"
+        ],
+        Resource = "arn:aws:es:eu-central-1:*:domain/*"
+      },
+      {
+        Sid    = "AllowCloudWatchLogging",
+        Effect = "Allow",
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ],
+        Resource = "*"
+      },
+      {
+        Sid    = "AllowKMSDecryptIfUsed",
+        Effect = "Allow",
+        Action = [
+          "kms:Decrypt"
+        ],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "lambda_search_reviews_attach" {
+  role       = aws_iam_role.lambda.name
+  policy_arn = aws_iam_policy.search_reviews_policy.arn
+}
+
+#############################################
 # EC2 INSTANCE ROLE FOR INGESTION JOBS
 #############################################
 
