@@ -1,20 +1,4 @@
 #############################################
-# Variables
-#############################################
-
-variable "lambda_arn" {
-  description = "ARN of the Lambda function to integrate with API Gateway"
-  type        = string
-}
-
-variable "api_name" {
-  description = "Name of the API Gateway instance"
-  type        = string
-  default     = "tt-api"
-}
-
-
-#############################################
 # API Gateway Configuration
 #############################################
 
@@ -73,15 +57,4 @@ resource "aws_apigatewayv2_stage" "default" {
   api_id      = aws_apigatewayv2_api.http.id
   name        = "$default"
   auto_deploy = true
-}
-
-
-#############################################
-# Outputs
-#############################################
-
-# Public invoke URL for the API Gateway
-output "invoke_url" {
-  description = "Base invoke URL for the deployed API Gateway"
-  value       = aws_apigatewayv2_api.http.api_endpoint
 }

@@ -37,12 +37,35 @@ variable "master_user_name" {
   type        = string
 }
 
-variable "agent_id" {
-  description = "Bedrock Agent ID"
+variable "opensearch_url" {
+  description = "OpenSearch endpoint URL"
   type        = string
 }
 
-variable "agent_alias" {
-  description = "Bedrock Agent Alias ID"
+variable "index_name" {
+  description = "Name of the OpenSearch index to query"
+  type        = string
+}
+
+variable "role_arn" {
+  description = "IAM role ARN that the Bedrock Agent will assume"
+  type        = string
+  default     = ""
+}
+
+variable "search_lambda_arn" {
+  description = "ARN of the Lambda used for the search_reviews action group"
+  type        = string
+  default     = ""
+}
+
+variable "kms_key_arn" {
+  description = "KMS key ARN for encryption"
+  type        = string
+  default     = ""
+}
+
+variable "agent_alias_id" {
+  description = "Manually created Bedrock Agent alias ID"
   type        = string
 }

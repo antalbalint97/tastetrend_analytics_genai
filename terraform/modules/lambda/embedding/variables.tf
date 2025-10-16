@@ -1,3 +1,7 @@
+#############################################
+# VARIABLES
+#############################################
+
 variable "os_endpoint" {
   description = "OpenSearch endpoint for embeddings"
   type        = string
@@ -20,5 +24,10 @@ variable "zip_bucket" {
 
 variable "zip_key" {
   description = "S3 key for the Lambda deployment zip"
+  type        = string
+}
+
+variable "role_arn" {
+  description = "IAM Role ARN for Lambda"
   type        = string
 }

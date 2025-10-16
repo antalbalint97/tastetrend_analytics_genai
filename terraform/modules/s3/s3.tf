@@ -1,4 +1,6 @@
-variable "bucket_name" {}
+#############################################
+# S3 buckets
+#############################################
 
 resource "aws_s3_bucket" "this" {
   bucket = var.bucket_name
@@ -23,5 +25,3 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "enc" {
     apply_server_side_encryption_by_default { sse_algorithm = "AES256" }
   }
 }
-
-output "name" { value = aws_s3_bucket.this.bucket }

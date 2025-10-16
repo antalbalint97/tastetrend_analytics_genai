@@ -1,5 +1,5 @@
 param (
-    [string]$Version = "4.2",
+    [string]$Version = "5.0",
     [string]$Region = "eu-central-1",
     [string]$ArtifactsBucket = "tastetrend-poc-artifacts-550744777598",
     [string]$RawBucket = "tastetrend-poc-raw-550744777598"

@@ -1,0 +1,19 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "AllowBedrockAgentInvocation",
+      "Effect": "Allow",
+      "Action": [
+        "bedrock:InvokeAgent",
+        "bedrock:InvokeModel",
+        "bedrock:InvokeModelWithResponseStream"
+      ],
+      "Resource": [
+        "arn:aws:bedrock:eu-central-1:550744777598:agent/I85C7USBK6",
+        "arn:aws:bedrock:eu-central-1:550744777598:agent-alias/I85C7USBK6/6EUR1ENEUQ",
+        "arn:aws:bedrock:eu-central-1:aws:foundation-model/*"
+      ]
+    }
+  ]
+}

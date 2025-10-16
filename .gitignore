@@ -91,3 +91,6 @@ out.json
 validation_combined.json
 embed_payload.json
 etl_payload.json
+executor.json
+routing_config.json
+search_v1.json

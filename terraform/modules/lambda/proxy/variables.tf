@@ -1,10 +1,19 @@
+#############################################
+# VARIABLES
+#############################################
+
 variable "agent_id" {
   description = "Bedrock agent ID"
   type        = string
 }
 
-variable "agent_alias" {
-  description = "Alias for the Bedrock agent"
+variable "agent_alias_id" {  
+ description = "Bedrock Agent alias ID (manually created)"
+ type        = string
+}
+
+variable "role_arn" {
+  description = "IAM role ARN for the Lambda execution"
   type        = string
 }
 

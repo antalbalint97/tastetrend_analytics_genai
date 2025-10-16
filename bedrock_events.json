@@ -1,0 +1,225 @@
+{
+    "Events": [
+        {
+            "EventId": "600c9f66-6d94-44dc-a092-19aacd39a40e",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:05:05+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:05:05Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/E,n,Z,b cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"7494cd79-224c-41a7-8b8f-e1cd8639ec42\",\"eventID\":\"600c9f66-6d94-44dc-a092-19aacd39a40e\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "6db191fc-1afc-4895-823c-3fb474a19e2f",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:04:49+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:04:49Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,Z,n,E cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"c06beec7-a2a8-46a5-b598-1eed41716cf3\",\"eventID\":\"6db191fc-1afc-4895-823c-3fb474a19e2f\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "2fbcd799-b4c5-4aa5-84e5-a92cf72d7bb6",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:04:32+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:04:32Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/E,b,n,Z cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"35c4cd8d-5648-4f55-b143-5612a7c64fab\",\"eventID\":\"2fbcd799-b4c5-4aa5-84e5-a92cf72d7bb6\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "7719fe55-7913-4e9f-b22c-affd4df38e95",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:04:15+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:04:15Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/n,E,b,Z cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"9bf538b7-f7d7-4abd-9895-1f7568cdb66c\",\"eventID\":\"7719fe55-7913-4e9f-b22c-affd4df38e95\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "cc316cb8-d406-4728-a8e9-93af823484d2",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:03:58+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:03:58Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/E,n,Z,b cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"57d1225b-183b-4440-910b-ffe37cc8b7bd\",\"eventID\":\"cc316cb8-d406-4728-a8e9-93af823484d2\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "844e7631-0fe5-4062-8be1-920ff5ed7fee",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:03:42+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:03:42Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/n,Z,E,b cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"1c83d1a4-3c5a-4295-a095-5b0b36ff3116\",\"eventID\":\"844e7631-0fe5-4062-8be1-920ff5ed7fee\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "0b257252-4697-46ba-971f-eed374cc09b3",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:03:25+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:03:25Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,n,b,E cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"16f9aa9e-5b7e-400b-8803-5239b6f5d162\",\"eventID\":\"0b257252-4697-46ba-971f-eed374cc09b3\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "05ff9c30-ed36-47d6-9610-b27a6e963635",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:03:08+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:03:08Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/E,Z,n,b cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"4f4dd037-38ef-4920-bc75-0caaeea8cd05\",\"eventID\":\"05ff9c30-ed36-47d6-9610-b27a6e963635\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "d650d6a7-20ad-4767-ba86-a926025c50f5",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:02:52+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:02:52Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/E,n,Z,b cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"1d7ff8dd-97f9-4ddd-8763-9ba892815fd2\",\"eventID\":\"d650d6a7-20ad-4767-ba86-a926025c50f5\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "dc6266f7-6189-43d0-8437-1900b400fac9",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:02:35+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:02:35Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,E,b,n cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"e53d7e4b-2390-4778-8aee-45094f9474c3\",\"eventID\":\"dc6266f7-6189-43d0-8437-1900b400fac9\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "7f3bf173-75a1-47ba-b225-14f8ef5de11e",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:02:18+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:02:18Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,E,Z,n cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"c0beffeb-e60c-4620-bf36-2928436e2d19\",\"eventID\":\"7f3bf173-75a1-47ba-b225-14f8ef5de11e\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "2175fc61-153b-4f39-8202-9188ff2ad04e",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:02:01+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:02:01Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/E,n,Z,b cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"bf6ad91b-51ae-4327-9361-5b8382b36907\",\"eventID\":\"2175fc61-153b-4f39-8202-9188ff2ad04e\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "e4218171-a0c3-4d74-8376-b66469c6d6cb",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:01:45+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:01:45Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/b,E,Z,n cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"c1bb7506-4cbd-4cb0-b5d5-3bbbc3534295\",\"eventID\":\"e4218171-a0c3-4d74-8376-b66469c6d6cb\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "a4cbd7da-c2b3-494a-a458-8b5bcca671c5",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:01:28+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:01:28Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,b,E,n cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"66d08f67-7144-422c-a551-fe1f48d8af52\",\"eventID\":\"a4cbd7da-c2b3-494a-a458-8b5bcca671c5\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "0c61b0b3-7049-46a5-b6da-50099f4d51b9",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:01:11+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:01:11Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/Z,n,E,b cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"87314946-c992-4f6c-a107-e5739e95d2f8\",\"eventID\":\"0c61b0b3-7049-46a5-b6da-50099f4d51b9\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "abd6e31c-541d-43e5-bd4c-8c6ec8633034",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:00:55+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:00:55Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/E,Z,b,n cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"aca6ca1a-e644-489a-9011-4808e53668a4\",\"eventID\":\"abd6e31c-541d-43e5-bd4c-8c6ec8633034\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "862de342-d440-4fca-ae09-cbaa49e92369",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:00:38+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:00:38Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/n,E,Z,b cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"6a3d8983-6cc4-4a86-a364-5b2d74c32de5\",\"eventID\":\"862de342-d440-4fca-ae09-cbaa49e92369\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "df6bbf60-f903-4754-b3c6-abe90f75f3db",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:00:21+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:00:21Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/E,Z,b,n cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"9d3e4b5e-88a3-4531-9675-bf147d8d598b\",\"eventID\":\"df6bbf60-f903-4754-b3c6-abe90f75f3db\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "35044ec6-c6ad-4cce-95e1-fd6b8c24aa75",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T21:00:04+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T19:00:04Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/E,n,b,Z cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"1ae5e47d-b8eb-42d4-9fa4-7ceb7b7a453e\",\"eventID\":\"35044ec6-c6ad-4cce-95e1-fd6b8c24aa75\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        },
+        {
+            "EventId": "fe8f17db-f8ca-4335-b181-5252e7e31d8b",
+            "EventName": "GetAgentAlias",
+            "ReadOnly": "true",
+            "AccessKeyId": "AKIAYAOXSMN7GU5O3M6N",
+            "EventTime": "2025-10-13T20:59:48+02:00",
+            "EventSource": "bedrock.amazonaws.com",
+            "Username": "antalb97",
+            "Resources": [],
+            "CloudTrailEvent": "{\"eventVersion\":\"1.09\",\"userIdentity\":{\"type\":\"IAMUser\",\"principalId\":\"AIDAYAOXSMN7GCNSESPHL\",\"arn\":\"arn:aws:iam::550744777598:user/antalb97\",\"accountId\":\"550744777598\",\"accessKeyId\":\"AKIAYAOXSMN7GU5O3M6N\",\"userName\":\"antalb97\"},\"eventTime\":\"2025-10-13T18:59:48Z\",\"eventSource\":\"bedrock.amazonaws.com\",\"eventName\":\"GetAgentAlias\",\"awsRegion\":\"eu-central-1\",\"sourceIPAddress\":\"81.182.65.146\",\"userAgent\":\"aws-cli/2.31.13 md/awscrt#0.27.6 ua/2.1 os/windows#10 md/arch#amd64 lang/python#3.13.7 md/pyimpl#CPython m/n,Z,E,b cfg/retry-mode#standard md/installer#exe md/prompt#off md/command#bedrock-agent.get-agent-alias\",\"requestParameters\":{\"agentId\":\"I85C7USBK6\",\"agentAliasId\":\"TBTFLFPCEQ\"},\"responseElements\":null,\"requestID\":\"a5dfa529-0364-487b-ad37-86c9cc72be8f\",\"eventID\":\"fe8f17db-f8ca-4335-b181-5252e7e31d8b\",\"readOnly\":true,\"eventType\":\"AwsApiCall\",\"managementEvent\":true,\"recipientAccountId\":\"550744777598\",\"eventCategory\":\"Management\"}"
+        }
+    ],
+    "NextToken": "yWh3HyhFo/0gRXkVQGL/bAtoUHgJzhIzarIUeSpSNu7xJQy8RLEOG0o+9EAL6ZO4"
+}

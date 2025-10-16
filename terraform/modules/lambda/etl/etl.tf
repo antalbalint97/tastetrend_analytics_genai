@@ -2,9 +2,6 @@
 # Lambda Module - ETL
 #############################################
 
-# -----------------------------
-# Lambda Resource Definition
-# -----------------------------
 resource "aws_lambda_function" "this" {
   function_name = var.function_name
   role          = var.role_arn
@@ -27,25 +24,4 @@ resource "aws_lambda_function" "this" {
   environment {
     variables = var.env
   }
-}
-
-# -----------------------------
-# Outputs
-# -----------------------------
-output "lambda_name" {
-  description = "Name of the deployed Lambda function"
-  value       = aws_lambda_function.this.function_name
-}
-
-output "lambda_arn" {
-  description = "ARN of the deployed Lambda function"
-  value       = aws_lambda_function.this.arn
-}
-
-# -----------------------------
-# Output: Environment Variables
-# -----------------------------
-output "env_vars" {
-  description = "Base environment variables passed to the Lambda function"
-  value       = var.env
 }
