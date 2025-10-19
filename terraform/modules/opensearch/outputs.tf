@@ -8,7 +8,7 @@ output "domain_name" {
 
 output "endpoint" {
   description = "OpenSearch endpoint URL"
-  value       = "https://${aws_opensearch_domain.this.endpoint}"  # Prepend 'https://'
+  value       = "https://${aws_opensearch_domain.this.endpoint}" # Prepend 'https://'
 }
 
 output "domain_arn" {

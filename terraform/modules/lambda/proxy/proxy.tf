@@ -21,19 +21,11 @@ resource "aws_lambda_function" "proxy" {
     variables = {
       AGENT_ID     = var.agent_id
       AGENT_ALIAS  = var.agent_alias_id
-      AWS_REGION   = data.aws_region.current.name
       API_KEY_HASH = var.api_key_hash
     }
   }
-
-  # Prevent Terraform from unnecessary redeploys
-  lifecycle {
-    ignore_changes = [
-      last_modified,
-      qualified_arn
-    ]
-  }
 }
+
 
 #############################################
 # IAM Inline Policy (Bedrock + Logs)
@@ -46,9 +38,9 @@ resource "aws_iam_role_policy" "proxy_bedrock_invoke" {
     Version = "2012-10-17",
     Statement = [
       {
-        Sid      = "AllowBedrockAgentInvoke",
-        Effect   = "Allow",
-        Action   = [
+        Sid    = "AllowBedrockAgentInvoke",
+        Effect = "Allow",
+        Action = [
           "bedrock:InvokeAgent",
           "bedrock-agent-runtime:InvokeAgent"
         ],
@@ -58,9 +50,9 @@ resource "aws_iam_role_policy" "proxy_bedrock_invoke" {
         ]
       },
       {
-        Sid      = "AllowCloudWatchLogs",
-        Effect   = "Allow",
-        Action   = [
+        Sid    = "AllowCloudWatchLogs",
+        Effect = "Allow",
+        Action = [
           "logs:CreateLogGroup",
           "logs:CreateLogStream",
           "logs:PutLogEvents"

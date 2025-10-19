@@ -49,8 +49,8 @@ resource "aws_iam_policy" "etl_policy" {
         ]])
       },
       {
-        Effect = "Allow",
-        Action = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+        Effect   = "Allow",
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
         Resource = "*"
       }
     ]
@@ -72,6 +72,7 @@ resource "aws_iam_role" "proxy_lambda_role" {
 
 resource "aws_iam_policy" "proxy_policy" {
   name = "tt-proxy-bedrock-policy"
+
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
@@ -82,10 +83,7 @@ resource "aws_iam_policy" "proxy_policy" {
           "bedrock:InvokeAgent",
           "bedrock-agent-runtime:InvokeAgent"
         ],
-        Resource = [
-          "arn:aws:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.me.account_id}:agent/${var.agent_id}",
-          "arn:aws:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.me.account_id}:agent-alias/${var.agent_id}/${var.agent_alias_id}"
-        ]
+        Resource = "arn:aws:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.me.account_id}:agent/*"
       },
       {
         Sid    = "AllowCloudWatchLogs",
@@ -101,6 +99,7 @@ resource "aws_iam_policy" "proxy_policy" {
   })
 }
 
+
 resource "aws_iam_role_policy_attachment" "proxy_attach" {
   role       = aws_iam_role.proxy_lambda_role.name
   policy_arn = aws_iam_policy.proxy_policy.arn
@@ -109,16 +108,38 @@ resource "aws_iam_role_policy_attachment" "proxy_attach" {
 #############################################
 # BEDROCK AGENT ROLE (KB + Logs + Lambda Invoke)
 #############################################
+
+# IAM Role for Bedrock Agent
 resource "aws_iam_role" "bedrock_agent_role" {
-  name               = "tt-bedrock-agent-role"
-  assume_role_policy = data.aws_iam_policy_document.bedrock_assume.json
+  name = "tt-bedrock-agent-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Principal = {
+          Service = "bedrock.amazonaws.com"
+        },
+        Action = "sts:AssumeRole"
+      }
+    ]
+  })
+
+  tags = {
+    Project = "tastetrend"
+    Env     = "poc"
+  }
 }
 
+# Policy for Bedrock Agent
 resource "aws_iam_policy" "bedrock_agent_policy" {
   name = "tt-bedrock-agent-policy"
+
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
+      # General Bedrock + KMS + Logs access
       {
         Effect = "Allow",
         Action = [
@@ -130,11 +151,31 @@ resource "aws_iam_policy" "bedrock_agent_policy" {
           "logs:*"
         ],
         Resource = "*"
+      },
+
+      # Explicit OpenSearch Serverless access for the KB
+      {
+        Sid = "AllowOpenSearchServerlessAccess",
+        Effect = "Allow",
+        Action = [
+          "aoss:APIAccessAll",
+          "aoss:CreateCollectionItems",
+          "aoss:BatchGetCollection",
+          "aoss:ReadDocument",
+          "aoss:WriteDocument",
+          "aoss:ListCollections",
+          "aoss:DescribeCollection"
+        ],
+        Resource = [
+          var.opensearch_collection_arn,
+          "${var.opensearch_collection_arn}/*"
+        ]
       }
     ]
   })
 }
 
+# Attach policy to Bedrock Agent role
 resource "aws_iam_role_policy_attachment" "bedrock_agent_attach" {
   role       = aws_iam_role.bedrock_agent_role.name
   policy_arn = aws_iam_policy.bedrock_agent_policy.arn

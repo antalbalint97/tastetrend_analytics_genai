@@ -26,11 +26,6 @@ variable "env" {
   default     = "poc"
 }
 
-variable "s3_bucket_source" {
-  description = "S3 bucket containing processed (cleaned) ETL data for the Knowledge Base"
-  type        = string
-}
-
 variable "api_key_hash" {
   description = "Hashed API key for Lambda authorization"
   type        = string
@@ -73,4 +68,9 @@ variable "api_key_value" {
   description = "API key used to authenticate demo requests"
   type        = string
   sensitive   = true
+}
+
+variable "opensearch_collection_arn" {
+  description = "ARN of the OpenSearch Serverless collection used as the vector store for the Bedrock Knowledge Base"
+  type        = string
 }

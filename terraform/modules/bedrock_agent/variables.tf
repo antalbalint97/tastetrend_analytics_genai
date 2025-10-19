@@ -17,12 +17,44 @@ variable "role_arn" {
   type        = string
 }
 
-variable "s3_bucket_source" {
-  description = "S3 bucket containing processed data for Bedrock Knowledge Base ingestion"
+variable "region" {
+  description = "AWS region for deploying Bedrock resources"
+  type        = string
+}
+
+variable "opensearch_collection_arn" {
+  description = "ARN of the OpenSearch Serverless collection used by the knowledge base"
+  type        = string
+}
+
+variable "index_name" {
+  description = "Vector index name within the OpenSearch collection"
+  type        = string
+}
+
+variable "processed_bucket" {
+  description = "S3 bucket name containing the processed review dataset"
   type        = string
 }
 
 variable "kms_key_arn" {
-  description = "KMS key for encryption"
+  description = "KMS key ARN for encrypting Bedrock resources"
+  type        = string
+  default     = ""
+}
+
+variable "agent_alias_id" {
+  description = "Alias ID for the Bedrock Agent (manually created)"
   type        = string
 }
+
+
+
+
+
+
+
+
+
+
+
