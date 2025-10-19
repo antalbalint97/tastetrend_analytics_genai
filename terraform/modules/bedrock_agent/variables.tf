@@ -4,43 +4,25 @@
 
 variable "agent_name" {
   description = "Name of the Bedrock Agent"
-  default     = "tastetrend-agent"
+  type        = string
 }
 
-variable "kms_key_arn" {
-  description = "KMS key ARN used for encryption"
+variable "kb_name" {
+  description = "Name of the Knowledge Base"
   type        = string
 }
 
 variable "role_arn" {
-  description = "IAM role ARN that the Bedrock Agent will assume"
+  description = "IAM Role ARN for the Bedrock Agent"
   type        = string
 }
 
-variable "search_lambda_arn" {
-  description = "ARN of the Lambda used for the search_reviews action group"
+variable "s3_bucket_source" {
+  description = "S3 bucket containing processed data for Bedrock Knowledge Base ingestion"
   type        = string
 }
 
-variable "region" {
-  description = "AWS region"
-  default     = "eu-central-1"
-}
-
-variable "schema_bucket_name" {
-  description = "S3 bucket name for the schema (not used for inline mode)"
+variable "kms_key_arn" {
+  description = "KMS key for encryption"
   type        = string
-  default     = null
-}
-
-variable "schema_object_key" {
-  description = "S3 object key for the schema (not used for inline mode)"
-  type        = string
-  default     = null
-}
-
-variable "alias_name" {
-  description = "Name for the Bedrock Agent alias"
-  type        = string
-  default     = "prod"
 }

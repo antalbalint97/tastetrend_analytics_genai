@@ -1,35 +1,34 @@
 #############################################
-# VARIABLES
+# Variables
 #############################################
-
 variable "agent_id" {
-  description = "Bedrock agent ID"
+  description = "Bedrock Agent ID"
   type        = string
 }
 
-variable "agent_alias_id" {  
- description = "Bedrock Agent alias ID (manually created)"
- type        = string
+variable "agent_alias_id" {
+  description = "Bedrock Agent alias ID"
+  type        = string
 }
 
 variable "role_arn" {
-  description = "IAM role ARN for the Lambda execution"
+  description = "IAM role ARN for the Lambda"
   type        = string
 }
 
 variable "api_key_hash" {
-  description = "Hashed API key for Lambda authorization"
+  description = "Hashed API key for API Gateway validation"
   type        = string
   sensitive   = true
 }
 
 variable "kms_key_arn" {
-  description = "KMS key ARN used for encryption"
+  description = "KMS key ARN for encryption (optional)"
   type        = string
 }
 
 variable "zip_bucket" {
-  description = "S3 bucket where Lambda deployment zip is stored"
+  description = "S3 bucket containing the Lambda deployment package"
   type        = string
 }
 

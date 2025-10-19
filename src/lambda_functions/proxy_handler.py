@@ -1,165 +1,85 @@
-# import os, json, boto3, hashlib, base64, time
+import os
+import json
+import boto3
+import hashlib
+import traceback
+import time
 
-# AGENT_ID     = os.environ["AGENT_ID"]
-# AGENT_ALIAS  = os.environ["AGENT_ALIAS"]
-# REGION       = os.environ["AWS_REGION"]
-# API_KEY_HASH = os.environ["API_KEY_HASH"]
+# --- Environment variables ---
+REQUIRED_ENVS = ["AGENT_ID", "AGENT_ALIAS", "AWS_REGION", "API_KEY_HASH"]
 
-# required_envs = ["AGENT_ID", "AGENT_ALIAS", "AWS_REGION", "API_KEY_HASH"]
-# for env in required_envs:
-#     if env not in os.environ or not os.environ[env]:
-#         raise ValueError(f"Missing required environment variable: {env}")
+for env in REQUIRED_ENVS:
+    if not os.environ.get(env):
+        raise ValueError(f"[INIT] Missing required environment variable: {env}")
 
-# brt = boto3.client("bedrock-agent-runtime", region_name=REGION)
-# print("[DEBUG] Bedrock runtime endpoint:", brt.meta.endpoint_url)
-
-
-# def _hash(s: str):
-#     return hashlib.sha256(s.encode()).hexdigest()
-
-
-# def handler(event, context):
-#     # --- Authorization ---
-#     headers = event.get("headers") or {}
-#     api_key = headers.get("x-api-key") or headers.get("X-API-Key")
-#     if not api_key or _hash(api_key) != API_KEY_HASH:
-#         return {"statusCode": 401, "body": json.dumps({"error": "Unauthorized"})}
-
-#     # --- Parse request ---
-#     try:
-#         body = json.loads(event.get("body") or "{}")
-#     except Exception:
-#         return {"statusCode": 400, "body": json.dumps({"error": "invalid JSON body"})}
-
-#     user_query = (body.get("query") or "").strip()
-#     if not user_query:
-#         return {"statusCode": 400, "body": json.dumps({"error": "missing 'query'"})}
-
-#     conv_id = body.get("conversation_id") or context.aws_request_id
-#     print(f"[DEBUG] Invoking agent {AGENT_ID}:{AGENT_ALIAS} | Query: {user_query}")
-
-#     # --- Invoke the Bedrock Agent ---
-#     try:
-#         response = brt.invoke_agent(
-#             agentId=AGENT_ID,
-#             agentAliasId=AGENT_ALIAS,
-#             sessionId=conv_id,
-#             inputText=user_query,
-#         )
-
-#         # --- Process streaming response ---
-#         output_text = ""
-#         refs = []
-#         stream = response.get("completion")
-
-#         if hasattr(stream, "__iter__"):
-#             print("[DEBUG] Streaming Bedrock events...")
-#             for event in stream:
-#                 event_type = event.get("type")
-#                 if not event_type:
-#                     continue
-
-#                 print(f"[DEBUG] Event type: {event_type}")
-
-#                 # Handle normal response tokens
-#                 if event_type == "responseStream":
-#                     content = event.get("responseStream", {})
-
-#                     # Handle token-by-token stream (bytes)
-#                     if "chunk" in content:
-#                         chunk = content["chunk"]
-#                         text_bytes = chunk.get("bytes")
-#                         if text_bytes:
-#                             decoded = text_bytes.decode("utf-8", errors="ignore")
-#                             output_text += decoded
-#                             print(f"[STREAM] {decoded.strip()}")
-
-#                     # Handle structured output text
-#                     elif "outputText" in content:
-#                         text = content["outputText"]
-#                         output_text += text
-#                         print(f"[STREAM] {text.strip()}")
-
-#                 # Handle final response event
-#                 elif event_type == "finalResponse":
-#                     final = event.get("finalResponse", {})
-#                     if isinstance(final, dict):
-#                         output_text += final.get("outputText", "")
-#                         refs = final.get("knowledgeBaseRetrievalResults", [])
-#                     print(f"[DEBUG] FinalResponse received.")
-
-#                 # Handle errors if present
-#                 elif event_type == "error":
-#                     print(f"[ERROR] Bedrock stream error: {event}")
-
-#         else:
-#             print("[WARN] Non-streaming response received; dumping raw object")
-#             print(json.dumps(response, default=str))
-#             output_text = str(response)
-
-#     except Exception as e:
-#         print("[ERROR] Bedrock invocation failed:", str(e))
-#         return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
-
-#     # --- Construct and log final result ---
-#     result = {
-#         "answer": output_text.strip(),
-#         "references": refs,
-#         "conversation_id": conv_id,
-#     }
-
-#     print("[DEBUG] Final response to API Gateway:", json.dumps(result, ensure_ascii=False))
-#     return {"statusCode": 200, "body": json.dumps(result)}
-
-import os, json, boto3, hashlib, base64, time
-
-AGENT_ID     = os.environ["AGENT_ID"]
-AGENT_ALIAS  = os.environ["AGENT_ALIAS"]
-REGION       = os.environ["AWS_REGION"]
+AGENT_ID = os.environ["AGENT_ID"]
+AGENT_ALIAS = os.environ["AGENT_ALIAS"]
+REGION = os.environ["AWS_REGION"]
 API_KEY_HASH = os.environ["API_KEY_HASH"]
 
-required_envs = ["AGENT_ID", "AGENT_ALIAS", "AWS_REGION", "API_KEY_HASH"]
-for env in required_envs:
-    if env not in os.environ or not os.environ[env]:
-        raise ValueError(f"Missing required environment variable: {env}")
+# --- Initialize Bedrock Runtime client ---
+try:
+    brt = boto3.client("bedrock-agent-runtime", region_name=REGION)
+    print(f"[INIT] Bedrock runtime client initialized in region: {REGION}")
+    print(f"[DEBUG] Endpoint: {brt.meta.endpoint_url}")
+except Exception as e:
+    print("[ERROR] Failed to initialize Bedrock client:", str(e))
+    raise
 
-brt = boto3.client("bedrock-agent-runtime", region_name=REGION)
-print("[DEBUG] Bedrock runtime endpoint:", brt.meta.endpoint_url)
 
-
-def _hash(s: str):
+def _hash(s: str) -> str:
+    """Hash a string using SHA256 (used for API key verification)."""
     return hashlib.sha256(s.encode()).hexdigest()
 
 
+def _log_event(prefix: str, data):
+    """Pretty print debug events with consistent prefix."""
+    try:
+        print(f"{prefix}: {json.dumps(data, ensure_ascii=False)[:800]}")
+    except Exception:
+        print(f"{prefix}: {data}")
+
+
 def handler(event, context):
-    # --- Handle Bedrock system validation (alias creation, warmup, etc.) ---
+    """
+    Lambda entrypoint.
+    Handles both API Gateway calls and Bedrock validation events.
+    """
+
+    start_time = time.time()
+    _log_event("[DEBUG] Incoming event", event)
+
+    # --- Handle Bedrock validation or warmup ---
     if isinstance(event, dict) and "actionGroup" in event:
-        print("[DEBUG] Detected Bedrock validation call:", event)
-        return {
-            "statusCode": 200,
-            "body": json.dumps({"message": "Validation OK"})
-        }
+        print("[DEBUG] Detected Bedrock validation/warmup event.")
+        return {"statusCode": 200, "body": json.dumps({"message": "Validation OK"})}
 
-    # --- Authorization (for API Gateway calls) ---
-    headers = event.get("headers") or {}
+    # --- Authorization ---
+    headers = (event.get("headers") or {})
     api_key = headers.get("x-api-key") or headers.get("X-API-Key")
-    if not api_key or _hash(api_key) != API_KEY_HASH:
-        return {"statusCode": 401, "body": json.dumps({"error": "Unauthorized"})}
+    if not api_key:
+        print("[WARN] Missing API key in headers.")
+        return {"statusCode": 401, "body": json.dumps({"error": "Unauthorized: missing API key"})}
 
-    # --- Parse request ---
+    if _hash(api_key) != API_KEY_HASH:
+        print("[WARN] Invalid API key provided.")
+        return {"statusCode": 401, "body": json.dumps({"error": "Unauthorized: invalid key"})}
+
+    # --- Parse request body ---
     try:
         body = json.loads(event.get("body") or "{}")
     except Exception:
-        return {"statusCode": 400, "body": json.dumps({"error": "invalid JSON body"})}
+        traceback.print_exc()
+        return {"statusCode": 400, "body": json.dumps({"error": "Invalid JSON body"})}
 
     user_query = (body.get("query") or "").strip()
     if not user_query:
-        return {"statusCode": 400, "body": json.dumps({"error": "missing 'query'"})}
+        return {"statusCode": 400, "body": json.dumps({"error": "Missing 'query'"})}
 
     conv_id = body.get("conversation_id") or context.aws_request_id
-    print(f"[DEBUG] Invoking agent {AGENT_ID}:{AGENT_ALIAS} | Query: {user_query}")
+    print(f"[DEBUG] Invoking Agent {AGENT_ID}:{AGENT_ALIAS} | Session: {conv_id} | Query: '{user_query}'")
 
-    # --- Invoke the Bedrock Agent ---
+    # --- Invoke Bedrock Agent ---
     try:
         response = brt.invoke_agent(
             agentId=AGENT_ID,
@@ -168,25 +88,23 @@ def handler(event, context):
             inputText=user_query,
         )
 
-        # --- Process streaming response ---
         output_text = ""
         refs = []
         stream = response.get("completion")
 
         if hasattr(stream, "__iter__"):
-            print("[DEBUG] Streaming Bedrock events...")
-            for event in stream:
-                event_type = event.get("type")
-                if not event_type:
+            print("[DEBUG] Streaming Bedrock response...")
+            for evt in stream:
+                evt_type = evt.get("type")
+                if not evt_type:
                     continue
 
-                print(f"[DEBUG] Event type: {event_type}")
+                print(f"[DEBUG] Stream event: {evt_type}")
 
-                if event_type == "responseStream":
-                    content = event.get("responseStream", {})
+                if evt_type == "responseStream":
+                    content = evt.get("responseStream", {})
                     if "chunk" in content:
-                        chunk = content["chunk"]
-                        text_bytes = chunk.get("bytes")
+                        text_bytes = content["chunk"].get("bytes")
                         if text_bytes:
                             decoded = text_bytes.decode("utf-8", errors="ignore")
                             output_text += decoded
@@ -196,31 +114,33 @@ def handler(event, context):
                         output_text += text
                         print(f"[STREAM] {text.strip()}")
 
-                elif event_type == "finalResponse":
-                    final = event.get("finalResponse", {})
+                elif evt_type == "finalResponse":
+                    final = evt.get("finalResponse", {})
                     if isinstance(final, dict):
                         output_text += final.get("outputText", "")
                         refs = final.get("knowledgeBaseRetrievalResults", [])
-                    print(f"[DEBUG] FinalResponse received.")
+                    print("[DEBUG] FinalResponse event received.")
 
-                elif event_type == "error":
-                    print(f"[ERROR] Bedrock stream error: {event}")
+                elif evt_type == "error":
+                    _log_event("[ERROR] Bedrock stream error", evt)
 
         else:
-            print("[WARN] Non-streaming response received; dumping raw object")
-            print(json.dumps(response, default=str))
+            print("[WARN] Non-streaming response; dumping raw payload")
+            _log_event("[DEBUG] Raw response", response)
             output_text = str(response)
 
     except Exception as e:
         print("[ERROR] Bedrock invocation failed:", str(e))
+        traceback.print_exc()
         return {"statusCode": 500, "body": json.dumps({"error": str(e)})}
 
-    # --- Construct final result ---
+    # --- Final response ---
     result = {
         "answer": output_text.strip(),
         "references": refs,
         "conversation_id": conv_id,
+        "latency_ms": round((time.time() - start_time) * 1000, 2),
     }
 
-    print("[DEBUG] Final response to API Gateway:", json.dumps(result, ensure_ascii=False))
+    _log_event("[DEBUG] Returning result", result)
     return {"statusCode": 200, "body": json.dumps(result)}

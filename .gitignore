@@ -94,3 +94,20 @@ etl_payload.json
 executor.json
 routing_config.json
 search_v1.json
+routing.json
+schema_full.json
+test_bedrock_agent.sh
+deployment_pipeline.ps1
+bedrock_invoke_policy.json
+alias_config.json
+--user-name
+--policy-arn
+bootstrap_ingest.sh
+srcipts/
+bedrock_events.json
+.env
+
+# Ignore local Lambda source code
+terraform/modules/lambda/embedding/
+terraform/modules/lambda/search_reviews/
+terraform/modules/lambda/opensearch/

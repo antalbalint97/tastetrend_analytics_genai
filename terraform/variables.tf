@@ -26,6 +26,11 @@ variable "env" {
   default     = "poc"
 }
 
+variable "s3_bucket_source" {
+  description = "S3 bucket containing processed (cleaned) ETL data for the Knowledge Base"
+  type        = string
+}
+
 variable "api_key_hash" {
   description = "Hashed API key for Lambda authorization"
   type        = string
@@ -53,12 +58,6 @@ variable "role_arn" {
   default     = ""
 }
 
-variable "search_lambda_arn" {
-  description = "ARN of the Lambda used for the search_reviews action group"
-  type        = string
-  default     = ""
-}
-
 variable "kms_key_arn" {
   description = "KMS key ARN for encryption"
   type        = string
@@ -68,4 +67,10 @@ variable "kms_key_arn" {
 variable "agent_alias_id" {
   description = "Manually created Bedrock Agent alias ID"
   type        = string
+}
+
+variable "api_key_value" {
+  description = "API key used to authenticate demo requests"
+  type        = string
+  sensitive   = true
 }
