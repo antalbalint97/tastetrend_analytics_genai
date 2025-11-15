@@ -15,7 +15,7 @@ resource "aws_lambda_function" "proxy" {
   timeout       = 30
 
   s3_bucket = var.zip_bucket
-  s3_key    = var.zip_key
+  s3_key = "lambda/proxy-${var.lambda_version}.zip"
 
   environment {
     variables = {
@@ -45,8 +45,8 @@ resource "aws_iam_role_policy" "proxy_bedrock_invoke" {
           "bedrock-agent-runtime:InvokeAgent"
         ],
         Resource = [
-          "arn:aws:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.me.account_id}:agent/${var.agent_id}",
-          "arn:aws:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.me.account_id}:agent-alias/${var.agent_id}/${var.agent_alias_id}"
+          "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.me.account_id}:agent/${var.agent_id}",
+          "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.me.account_id}:agent-alias/${var.agent_id}/${var.agent_alias_id}"
         ]
       },
       {

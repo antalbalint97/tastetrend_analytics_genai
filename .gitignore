@@ -106,6 +106,7 @@ bootstrap_ingest.sh
 srcipts/
 bedrock_events.json
 .env
+opensearch/
 
 # Ignore local Lambda source code
 terraform/modules/lambda/embedding/

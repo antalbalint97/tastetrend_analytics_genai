@@ -2,12 +2,6 @@
 # Variables
 #############################################
 
-variable "region" {
-  type        = string
-  description = "AWS region to deploy all resources"
-  default     = "eu-central-1"
-}
-
 variable "project" {
   type        = string
   description = "Project name prefix used for naming resources"
@@ -32,21 +26,6 @@ variable "api_key_hash" {
   sensitive   = true
 }
 
-variable "master_user_name" {
-  description = "Name of the master user for the OpenSearch domain"
-  type        = string
-}
-
-variable "opensearch_url" {
-  description = "OpenSearch endpoint URL"
-  type        = string
-}
-
-variable "index_name" {
-  description = "Name of the OpenSearch index to query"
-  type        = string
-}
-
 variable "role_arn" {
   description = "IAM role ARN that the Bedrock Agent will assume"
   type        = string
@@ -59,18 +38,26 @@ variable "kms_key_arn" {
   default     = ""
 }
 
-variable "agent_alias_id" {
-  description = "Manually created Bedrock Agent alias ID"
+variable "index_name" {
+  description = "Name of the OpenSearch index to query"
   type        = string
+  default     = "reviews"
 }
 
-variable "api_key_value" {
-  description = "API key used to authenticate demo requests"
+variable "region" {
+  description = "AWS region to deploy resources in"
   type        = string
-  sensitive   = true
+  default     = "eu-central-1" # or your preferred region
 }
 
-variable "opensearch_collection_arn" {
-  description = "ARN of the OpenSearch Serverless collection used as the vector store for the Bedrock Knowledge Base"
+variable "profile" {
+  description = "Optional AWS CLI profile to use for credentials"
   type        = string
+  default     = null
+}
+
+variable "collection_name" {
+  description = "Name of the OpenSearch Serverless collection"
+  type        = string
+  default     = "tastetrend"
 }

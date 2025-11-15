@@ -83,7 +83,7 @@ resource "aws_iam_policy" "proxy_policy" {
           "bedrock:InvokeAgent",
           "bedrock-agent-runtime:InvokeAgent"
         ],
-        Resource = "arn:aws:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.me.account_id}:agent/*"
+        Resource = "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.me.account_id}:agent/*"
       },
       {
         Sid    = "AllowCloudWatchLogs",
@@ -139,8 +139,9 @@ resource "aws_iam_policy" "bedrock_agent_policy" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
-      # General Bedrock + KMS + Logs access
+      # 1. Bedrock + Bedrock Agent Runtime + Logs + KMS
       {
+        Sid = "AllowBedrockAgentCoreAccess",
         Effect = "Allow",
         Action = [
           "bedrock:*",
@@ -148,23 +149,32 @@ resource "aws_iam_policy" "bedrock_agent_policy" {
           "bedrock-agent-runtime:*",
           "kms:Decrypt",
           "kms:GenerateDataKey",
-          "logs:*"
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
         ],
         Resource = "*"
       },
 
-      # Explicit OpenSearch Serverless access for the KB
+      # 2. Explicit OpenSearch Serverless access for Knowledge Base storage
       {
         Sid = "AllowOpenSearchServerlessAccess",
         Effect = "Allow",
         Action = [
+          # Core OpenSearch Serverless collection actions
           "aoss:APIAccessAll",
-          "aoss:CreateCollectionItems",
+          "aoss:ListCollections",
           "aoss:BatchGetCollection",
+          "aoss:DescribeCollection",
+
+          # Document-level actions for Bedrock KB
           "aoss:ReadDocument",
           "aoss:WriteDocument",
-          "aoss:ListCollections",
-          "aoss:DescribeCollection"
+
+          # Index-level actions (required for KB auto-index creation)
+          "aoss:CreateIndex",
+          "aoss:UpdateIndex",
+          "aoss:DescribeIndex"
         ],
         Resource = [
           var.opensearch_collection_arn,
@@ -174,6 +184,7 @@ resource "aws_iam_policy" "bedrock_agent_policy" {
     ]
   })
 }
+
 
 # Attach policy to Bedrock Agent role
 resource "aws_iam_role_policy_attachment" "bedrock_agent_attach" {

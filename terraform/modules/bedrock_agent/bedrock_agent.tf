@@ -12,7 +12,7 @@ resource "aws_bedrockagent_knowledge_base" "kb" {
   knowledge_base_configuration {
     type = "VECTOR"
     vector_knowledge_base_configuration {
-      embedding_model_arn = "arn:aws:bedrock:${data.aws_region.current.name}::foundation-model/amazon.titan-embed-text-v1"
+      embedding_model_arn = "arn:aws:bedrock:${data.aws_region.current.id}::foundation-model/amazon.titan-embed-text-v1"
     }
   }
 
@@ -55,7 +55,7 @@ resource "aws_bedrockagent_data_source" "kb_source" {
 resource "aws_bedrockagent_agent" "agent" {  
   agent_name                  = var.agent_name
   description                 = "TasteTrend GenAI Agent"
-  foundation_model            = "arn:aws:bedrock:${data.aws_region.current.name}::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
+  foundation_model            = "arn:aws:bedrock:${data.aws_region.current.id}::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
   instruction                 = file("${path.module}/instructions.txt")
   idle_session_ttl_in_seconds = 600
   agent_resource_role_arn     = var.role_arn
@@ -76,4 +76,12 @@ resource "aws_bedrockagent_agent_knowledge_base_association" "association" {
   knowledge_base_id    = aws_bedrockagent_knowledge_base.kb.id
   knowledge_base_state = "ENABLED" # required field per AWS provider spec
   description          = "Associates the TasteTrend Agent with the Knowledge Base"
+}
+
+#############################################
+# Agent–Alias
+#############################################
+resource "aws_bedrockagent_agent_alias" "default" {
+  agent_id         = aws_bedrockagent_agent.agent.id
+  agent_alias_name = "default"
 }

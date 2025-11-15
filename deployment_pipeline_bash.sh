@@ -4,7 +4,7 @@ set -euo pipefail
 # --------------------------
 # Parameters (with defaults)
 # --------------------------
-VERSION="${1:-5.0}"
+VERSION="${1:-5.2}"
 REGION="${2:-eu-central-1}"
 ARTIFACTS_BUCKET="${3:-tastetrend-poc-artifacts-550744777598}"
 RAW_BUCKET="${4:-tastetrend-poc-raw-550744777598}"

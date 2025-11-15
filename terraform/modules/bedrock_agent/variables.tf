@@ -17,11 +17,6 @@ variable "role_arn" {
   type        = string
 }
 
-variable "region" {
-  description = "AWS region for deploying Bedrock resources"
-  type        = string
-}
-
 variable "opensearch_collection_arn" {
   description = "ARN of the OpenSearch Serverless collection used by the knowledge base"
   type        = string
@@ -43,10 +38,6 @@ variable "kms_key_arn" {
   default     = ""
 }
 
-variable "agent_alias_id" {
-  description = "Alias ID for the Bedrock Agent (manually created)"
-  type        = string
-}
 
 
 

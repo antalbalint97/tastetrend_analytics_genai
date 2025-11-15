@@ -1,19 +1,6 @@
 #############################################
-# Terraform + Provider
+# Terraform
 #############################################
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = var.region
-}
-
 data "aws_caller_identity" "me" {}
 data "aws_region" "current" {}
 
@@ -50,7 +37,6 @@ module "artifacts" {
 module "iam" {
   source         = "./modules/iam"
   agent_id       = module.bedrock_agent.agent_id
-  agent_alias_id = var.agent_alias_id
   bucket_names   = [module.raw.bucket_name, module.processed.bucket_name]
   opensearch_collection_arn = module.opensearch.opensearch_collection_arn
 }
@@ -152,6 +138,7 @@ module "opensearch" {
   collection_name        = "tastetrend-vectorstore"
   bedrock_agent_role_arn = module.iam.bedrock_agent_role_arn
   description            = "Vector collection for TasteTrend Bedrock knowledge base"
+  index_name      = var.index_name
 }
 
 #############################################
@@ -159,15 +146,13 @@ module "opensearch" {
 #############################################
 module "bedrock_agent" {
   source                    = "./modules/bedrock_agent"
-  region                    = var.region
   agent_name                = "tastetrend-agent"
   kb_name                   = "tastetrend-knowledge-base"
   role_arn                  = module.iam.bedrock_agent_role_arn
   kms_key_arn               =  aws_kms_key.main.arn
   processed_bucket          = module.processed.bucket_name
   opensearch_collection_arn = module.opensearch.opensearch_collection_arn
-  index_name                = var.index_name
-  agent_alias_id            = var.agent_alias_id
+  index_name                = module.opensearch.opensearch_index_name
 }
 
 #############################################
@@ -185,7 +170,7 @@ resource "aws_iam_policy" "proxy_agent_invoke" {
         Action: [
           "bedrock-agent:InvokeAgent"
         ],
-        Resource: "arn:aws:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.me.account_id}:agent/${module.bedrock_agent.agent_id}"
+        Resource: "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.me.account_id}:agent/${module.bedrock_agent.agent_id}"
       }
     ]
   })
@@ -203,13 +188,15 @@ resource "aws_iam_role_policy_attachment" "proxy_agent_attach" {
 #############################################
 module "lambda_proxy" {
   source         = "./modules/lambda/proxy"
+  function_name  = "tastetrend-proxy-lambda"
   role_arn       = module.iam.proxy_lambda_role_arn
   agent_id       = module.bedrock_agent.agent_id
-  agent_alias_id = var.agent_alias_id
+  agent_alias_id = module.bedrock_agent.agent_alias_id
   api_key_hash   = var.api_key_hash
   kms_key_arn    =  aws_kms_key.main.arn
   zip_bucket     = local.zip_bucket
   zip_key        = local.zip_key
+  lambda_version = var.lambda_version
 }
 
 #############################################

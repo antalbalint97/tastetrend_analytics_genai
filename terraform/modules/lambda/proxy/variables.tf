@@ -36,3 +36,13 @@ variable "zip_key" {
   description = "S3 key of the Lambda zip file"
   type        = string
 }
+
+variable "function_name" {
+  description = "Lambda function name"
+  type        = string
+}
+
+variable "lambda_version" {
+  description = "Lambda artifact version (used in S3 key naming)"
+  type        = string
+}
