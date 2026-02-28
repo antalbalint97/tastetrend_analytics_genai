@@ -15,6 +15,11 @@ variable "bedrock_agent_role_arn" {
   type        = string
 }
 
+variable "search_lambda_role_arn" {
+  description = "ARN of the Search Lambda IAM role that will access the collection"
+  type        = string
+}
+
 # Description for the collection
 variable "description" {
   description = "Description for the OpenSearch Serverless collection"

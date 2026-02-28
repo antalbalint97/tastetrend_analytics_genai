@@ -14,7 +14,17 @@ output "proxy_lambda_role_name" {
   value       = aws_iam_role.proxy_lambda_role.name
 }
 
-output "bedrock_agent_role_arn" {
+output "search_lambda_role_arn" {
+  description = "ARN of the Search Lambda IAM role"
+  value       = aws_iam_role.search_lambda_role.arn
+}
+
+output "search_lambda_role_name" {
+  description = "Name of the Search Lambda IAM role"
+  value       = aws_iam_role.search_lambda_role.name
+}
+
+
   description = "ARN of the Bedrock Agent IAM role"
   value       = aws_iam_role.bedrock_agent_role.arn
 }

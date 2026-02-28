@@ -39,7 +39,7 @@ os_client = OpenSearch(
 
 
 EMBED_MODEL = "amazon.titan-embed-text-v2:0"
-VECTOR_DIM  = int(os.getenv("VECTOR_DIM", "1024"))
+VECTOR_DIM  = int(os.getenv("VECTOR_DIM", "1536"))
 BATCH       = int(os.getenv("BATCH_SIZE", "8"))
 
 
@@ -60,7 +60,7 @@ def _ensure_index(index_name: str):
                         "location":  {"type": "keyword"},
                         "rating":    {"type": "float"},
                         "text":      {"type": "text"},
-                        "vector":    {"type": "knn_vector", "dimension": VECTOR_DIM}
+                        "embedding": {"type": "knn_vector", "dimension": VECTOR_DIM}
                     }
                 }
             }
@@ -210,7 +210,7 @@ def handler(event, context):
         if len(batch) >= BATCH:
             vecs = _embed_batch([d["text"] for d in batch])
             for d, v in zip(batch, vecs):
-                d["vector"] = v
+                d["embedding"] = v
             _bulk_upsert(index_name, batch)
             ingested += len(batch)
 
@@ -223,7 +223,7 @@ def handler(event, context):
     if batch:
         vecs = _embed_batch([d["text"] for d in batch])
         for d, v in zip(batch, vecs):
-            d["vector"] = v
+            d["embedding"] = v
         _bulk_upsert(index_name, batch)
         ingested += len(batch)
 

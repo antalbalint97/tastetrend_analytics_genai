@@ -20,9 +20,9 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["q"],
+                "required": ["query"],
                 "properties": {
-                  "q": {
+                  "query": {
                     "type": "string",
                     "description": "Query string to search restaurant reviews"
                   }
@@ -39,14 +39,14 @@
                 "schema": {
                   "type": "object",
                   "properties": {
-                    "res": {
+                    "results": {
                       "type": "array",
                       "items": {
                         "type": "object",
                         "properties": {
-                          "r": { "type": "string" },
-                          "id": { "type": "string" },
-                          "t": { "type": "string" }
+                          "review_id": { "type": "string" },
+                          "location":  { "type": "string" },
+                          "text":      { "type": "string" }
                         }
                       }
                     }

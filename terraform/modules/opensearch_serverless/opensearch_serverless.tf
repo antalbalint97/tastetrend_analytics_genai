@@ -94,7 +94,8 @@ resource "aws_opensearchserverless_access_policy" "access" {
         }
       ],
       Principal = [
-        var.bedrock_agent_role_arn
+        var.bedrock_agent_role_arn,
+        var.search_lambda_role_arn
       ]
     }
   ])
