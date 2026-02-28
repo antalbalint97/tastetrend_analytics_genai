@@ -92,7 +92,8 @@ resource "aws_kms_key" "main" {
           AWS = [
             "arn:aws:iam::${data.aws_caller_identity.me.account_id}:role/tt-bedrock-agent-role",
             "arn:aws:iam::${data.aws_caller_identity.me.account_id}:role/tt-proxy-lambda-role",
-            "arn:aws:iam::${data.aws_caller_identity.me.account_id}:role/tt-etl-lambda-role"
+            "arn:aws:iam::${data.aws_caller_identity.me.account_id}:role/tt-etl-lambda-role",
+            "arn:aws:iam::${data.aws_caller_identity.me.account_id}:role/tt-search-lambda-role"
           ]
         },
         Action = [
@@ -137,6 +138,7 @@ module "opensearch" {
   source = "./modules/opensearch_serverless"
   collection_name        = "tastetrend-vectorstore"
   bedrock_agent_role_arn = module.iam.bedrock_agent_role_arn
+  search_lambda_role_arn = module.iam.search_lambda_role_arn
   description            = "Vector collection for TasteTrend Bedrock knowledge base"
   index_name      = var.index_name
 }
@@ -182,6 +184,20 @@ resource "aws_iam_role_policy_attachment" "proxy_agent_attach" {
   policy_arn = aws_iam_policy.proxy_agent_invoke.arn
 }
 
+
+#############################################
+# Search Lambda (vector search for Bedrock Agent action group)
+#############################################
+module "lambda_search" {
+  source         = "./modules/lambda/search"
+  function_name  = "${local.prefix}-search"
+  role_arn       = module.iam.search_lambda_role_arn
+  zip_bucket     = local.zip_bucket
+  zip_key        = local.zip_key
+  lambda_version = var.lambda_version
+  opensearch_url = module.opensearch.opensearch_collection_endpoint
+  index_name     = var.index_name
+}
 
 #############################################
 # Proxy Lambda

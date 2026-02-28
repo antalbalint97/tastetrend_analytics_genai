@@ -106,8 +106,50 @@ resource "aws_iam_role_policy_attachment" "proxy_attach" {
 }
 
 #############################################
-# BEDROCK AGENT ROLE (KB + Logs + Lambda Invoke)
+# SEARCH LAMBDA ROLE (OpenSearch + Bedrock Embeddings + Logs)
 #############################################
+resource "aws_iam_role" "search_lambda_role" {
+  name               = "tt-search-lambda-role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
+}
+
+resource "aws_iam_policy" "search_policy" {
+  name = "tt-search-lambda-policy"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = [
+          "aoss:APIAccessAll"
+        ],
+        Resource = [
+          var.opensearch_collection_arn,
+          "${var.opensearch_collection_arn}/*"
+        ]
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "bedrock:InvokeModel"
+        ],
+        Resource = "arn:aws:bedrock:${data.aws_region.current.id}::foundation-model/amazon.titan-embed-text-v2:0"
+      },
+      {
+        Effect   = "Allow",
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+        Resource = "*"
+      }
+    ]
+  })
+}
+
+resource "aws_iam_role_policy_attachment" "search_attach" {
+  role       = aws_iam_role.search_lambda_role.name
+  policy_arn = aws_iam_policy.search_policy.arn
+}
+
+
 
 # IAM Role for Bedrock Agent
 resource "aws_iam_role" "bedrock_agent_role" {

@@ -168,8 +168,8 @@ def lambda_handler(event, context):
     # --- Perform vector search in OpenSearch ---
     search_payload = {
         "size": 5,
-        "query": {"knn": {"vector": {"vector": emb, "k": 5}}},
-        "_source": ["text", "restaurant_name", "review_id"]
+        "query": {"knn": {"embedding": {"vector": emb, "k": 5}}},
+        "_source": ["review_id", "text", "location", "restaurant_name"]
     }
 
     resp = requests.post(
@@ -193,7 +193,7 @@ def lambda_handler(event, context):
     results = [
         {
             "review_id": r["_source"].get("review_id"),
-            "restaurant_name": r["_source"].get("restaurant_name"),
+            "location": r["_source"].get("location") or r["_source"].get("restaurant_name"),
             "text": r["_source"].get("text")
         }
         for r in hits
