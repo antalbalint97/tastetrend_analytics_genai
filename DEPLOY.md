@@ -43,14 +43,31 @@ After apply, note the outputs:
 
 ## 2. Build & Upload Lambda Packages
 
+The deployment script installs Python dependencies from `requirements-lambda.txt`
+into a temporary build directory, copies the Lambda source code on top, and
+creates self-contained zip artifacts.
+
 ```bash
-# From the repo root
-./deployment_pipeline_bash.sh <VERSION> eu-central-1 <ARTIFACTS_BUCKET>
+# From the repo root — build + upload version 6.1
+./deployment_pipeline_bash.sh 6.1 eu-central-1 <ARTIFACTS_BUCKET>
 ```
+
+This produces four zip artifacts uploaded to S3 with keys that match Terraform:
+
+| Lambda    | S3 key                            |
+|-----------|-----------------------------------|
+| ETL       | `lambda/etl-6.1.zip`              |
+| Embedding | `lambda/embedding-6.1.zip`        |
+| Search    | `lambda/search-6.1.zip`           |
+| Proxy     | `lambda/proxy-6.1.zip`            |
 
 Then update the Lambda functions if the version has changed:
 ```bash
-terraform apply -var="lambda_version=<VERSION>" ...
+cd terraform
+terraform apply \
+  -var="lambda_version=6.1" \
+  -var="api_key_hash=$(echo -n 'YOUR_API_KEY' | sha256sum | awk '{print $1}')" \
+  -var="opensearch_master_password=YourStr0ngP@ssword!"
 ```
 
 ---

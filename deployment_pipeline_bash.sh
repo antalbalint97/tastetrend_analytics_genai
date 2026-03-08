@@ -4,7 +4,7 @@ set -euo pipefail
 # --------------------------
 # Parameters (with defaults)
 # --------------------------
-VERSION="${1:-5.2}"
+VERSION="${1:-6.1}"
 REGION="${2:-eu-central-1}"
 ARTIFACTS_BUCKET="${3:-tastetrend-poc-artifacts-550744777598}"
 RAW_BUCKET="${4:-tastetrend-poc-raw-550744777598}"
@@ -13,40 +13,50 @@ RAW_BUCKET="${4:-tastetrend-poc-raw-550744777598}"
 # Paths
 # --------------------------
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-TMP="$ROOT/tmp"
+BUILD_DIR="$ROOT/tmp"
 SRC="$ROOT/src"
 DIST="$ROOT/deployment"
 RAW_DATA="$ROOT/data/raw"
-VERSION_FILE="$ROOT/version.txt"
-HISTORY_FILE="$ROOT/version_history.txt"
 
 # --------------------------
 # Clean and prepare
 # --------------------------
 echo -e "\nCleaning build folders..."
-rm -rf "$TMP" "$DIST"
-mkdir -p "$TMP" "$DIST"
+rm -rf "$BUILD_DIR" "$DIST"
+mkdir -p "$BUILD_DIR" "$DIST"
 
 # --------------------------
-# Copy source
+# Install Python dependencies
+# --------------------------
+echo "Installing Python dependencies into build directory..."
+pip install -r "$ROOT/requirements-lambda.txt" -t "$BUILD_DIR" --no-cache-dir -q
+
+# --------------------------
+# Copy source (after deps so src/ files win on any overlap)
 # --------------------------
 echo "Copying source files..."
-cp -r "$SRC/"* "$TMP/"
+cp -r "$SRC/"* "$BUILD_DIR/"
 
 # --------------------------
 # Build ZIPs
 # --------------------------
 echo -e "\nCreating Lambda ZIPs..."
 
+# All Lambdas share the same package for this PoC.
+# Names match the Terraform s3_key values exactly:
+#   lambda/etl-<VERSION>.zip
+#   lambda/embedding-<VERSION>.zip
+#   lambda/search-<VERSION>.zip
+#   lambda/proxy-<VERSION>.zip
 ETL_ZIP="$DIST/tastetrend-etl-$VERSION.zip"
 EMBED_ZIP="$DIST/tastetrend-embedding-$VERSION.zip"
+SEARCH_ZIP="$DIST/tastetrend-search-$VERSION.zip"
 PROXY_ZIP="$DIST/tastetrend-proxy-$VERSION.zip"
-SEARCH_ZIP="$DIST/tastetrend-search-reviews-$VERSION.zip"
 
-(cd "$TMP" && zip -r -q "$ETL_ZIP" .)
+(cd "$BUILD_DIR" && zip -r -q "$ETL_ZIP" .)
 cp "$ETL_ZIP" "$EMBED_ZIP"
-cp "$ETL_ZIP" "$PROXY_ZIP"
 cp "$ETL_ZIP" "$SEARCH_ZIP"
+cp "$ETL_ZIP" "$PROXY_ZIP"
 
 echo -e "\nZIPs created:"
 ls -lh "$DIST"
@@ -55,10 +65,10 @@ ls -lh "$DIST"
 # Upload to S3
 # --------------------------
 echo -e "\nUploading Lambda ZIPs to S3 bucket $ARTIFACTS_BUCKET..."
-aws s3 cp "$ETL_ZIP"    "s3://$ARTIFACTS_BUCKET/lambda/api-$VERSION.zip"            --region "$REGION"
-aws s3 cp "$EMBED_ZIP"  "s3://$ARTIFACTS_BUCKET/lambda/embed-$VERSION.zip"          --region "$REGION"
-aws s3 cp "$PROXY_ZIP"  "s3://$ARTIFACTS_BUCKET/lambda/proxy-$VERSION.zip"          --region "$REGION"
-aws s3 cp "$SEARCH_ZIP" "s3://$ARTIFACTS_BUCKET/lambda/search-reviews-$VERSION.zip" --region "$REGION"
+aws s3 cp "$ETL_ZIP"    "s3://$ARTIFACTS_BUCKET/lambda/etl-$VERSION.zip"       --region "$REGION"
+aws s3 cp "$EMBED_ZIP"  "s3://$ARTIFACTS_BUCKET/lambda/embedding-$VERSION.zip" --region "$REGION"
+aws s3 cp "$SEARCH_ZIP" "s3://$ARTIFACTS_BUCKET/lambda/search-$VERSION.zip"    --region "$REGION"
+aws s3 cp "$PROXY_ZIP"  "s3://$ARTIFACTS_BUCKET/lambda/proxy-$VERSION.zip"     --region "$REGION"
 echo "Lambda ZIPs upload complete."
 
 # --------------------------
