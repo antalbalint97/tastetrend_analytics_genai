@@ -13,6 +13,7 @@ REGION = os.environ.get("AWS_REGION", "eu-central-1")
 
 # Known restaurant / location names for metadata-aware filtering.
 # Extend via the KNOWN_LOCATIONS env var (comma-separated).
+# Casing must match the `restaurant_name` keyword values stored in OpenSearch.
 _DEFAULT_LOCATIONS = ["Riverside", "Uptown", "Downtown", "Midtown", "Lakeside"]
 KNOWN_LOCATIONS = [
     loc.strip()
@@ -21,6 +22,12 @@ KNOWN_LOCATIONS = [
     ).split(",")
     if loc.strip()
 ]
+
+# Pre-compile word-boundary patterns for each known location (case-insensitive).
+_LOCATION_PATTERNS = {
+    loc: re.compile(r'\b' + re.escape(loc) + r'\b', re.IGNORECASE)
+    for loc in KNOWN_LOCATIONS
+}
 
 # === AWS clients and auth setup ===
 session = boto3.Session()
@@ -49,11 +56,15 @@ def get_embedding(query: str):
 
 
 def _detect_location(query: str):
-    """Return the first known location name found in *query* (case-insensitive), or None."""
-    query_lower = query.lower()
-    for loc in KNOWN_LOCATIONS:
-        # Use word-boundary check so "Downtown" won't accidentally match inside another word.
-        if re.search(r'\b' + re.escape(loc.lower()) + r'\b', query_lower):
+    """Return the first known location mentioned in *query*, or ``None``.
+
+    Matching is case-insensitive with word boundaries.  The returned string
+    preserves the original casing from ``KNOWN_LOCATIONS`` so it can be used
+    directly in an OpenSearch ``term`` filter against the ``restaurant_name``
+    keyword field.
+    """
+    for loc, pattern in _LOCATION_PATTERNS.items():
+        if pattern.search(query):
             return loc
     return None
 
