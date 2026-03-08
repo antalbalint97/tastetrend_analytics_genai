@@ -218,7 +218,7 @@ def _verify_index_count(index_name, expected_count):
     try:
         resp = os_client.count(index=index_name)
         actual_count = resp.get("count", 0)
-        match = actual_count >= expected_count
+        match = actual_count == expected_count
         print(f"[INFO] Verification: index '{index_name}' has {actual_count} docs, "
               f"expected {expected_count}, match={match}")
         return {
@@ -227,7 +227,8 @@ def _verify_index_count(index_name, expected_count):
             "count_matches": match,
         }
     except Exception as e:
-        print(f"[WARN] Verification failed for index '{index_name}': {e}")
+        print(f"[WARN] Verification failed for index '{index_name}' "
+              f"(expected {expected_count} docs): {e}")
         return {
             "expected_documents": expected_count,
             "verified_document_count": None,
