@@ -62,7 +62,10 @@ data/
 *.parquet
 *.csv
 *.tsv
-*.txt
+
+# Exclude .txt from data dirs only (keep terraform/modules/**/*.txt tracked)
+/*.txt
+data/**/*.txt
 
 # ----------------
 # Lambda / Deployment Artifacts
@@ -108,7 +111,6 @@ bedrock_events.json
 .env
 opensearch/
 
-# Ignore local Lambda source code
-terraform/modules/lambda/embedding/
+# Ignore local Lambda source code (old/unused paths)
 terraform/modules/lambda/search_reviews/
 terraform/modules/lambda/opensearch/
