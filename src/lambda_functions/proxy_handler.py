@@ -12,10 +12,40 @@ for env in REQUIRED_ENVS:
     if not os.environ.get(env):
         raise ValueError(f"[INIT] Missing required environment variable: {env}")
 
-AGENT_ID = os.environ["AGENT_ID"]
-AGENT_ALIAS = os.environ["AGENT_ALIAS"]
-REGION = os.environ["AWS_REGION"]
 API_KEY_HASH = os.environ["API_KEY_HASH"]
+
+
+def _extract_agent_id(raw: str) -> str:
+    """Extract plain agent ID from a raw value that may be an ARN or plain ID.
+
+    Supported formats:
+      - plain ID:  "IVEGCZX9LV"
+      - agent ARN: "arn:aws:bedrock:REGION:ACCOUNT:agent/IVEGCZX9LV"
+    """
+    if raw.startswith("arn:"):
+        # ARN format: arn:aws:bedrock:REGION:ACCOUNT:agent/AGENT_ID
+        return raw.rsplit("/", 1)[-1]
+    return raw.strip()
+
+
+def _extract_alias_id(raw: str) -> str:
+    """Extract plain alias ID from a raw value that may be an ARN or plain ID.
+
+    Supported formats:
+      - plain ID:   "NMBODVUPUR"
+      - alias ARN:  "arn:aws:bedrock:REGION:ACCOUNT:agent-alias/AGENT_ID/ALIAS_ID"
+    """
+    if raw.startswith("arn:"):
+        # ARN format: arn:aws:bedrock:REGION:ACCOUNT:agent-alias/AGENT_ID/ALIAS_ID
+        return raw.rsplit("/", 1)[-1]
+    return raw.strip()
+
+
+AGENT_ID = _extract_agent_id(os.environ["AGENT_ID"])
+AGENT_ALIAS = _extract_alias_id(os.environ["AGENT_ALIAS"])
+REGION = os.environ.get("BEDROCK_REGION", os.environ["AWS_REGION"])
+
+print(f"[INIT] Agent config — agentId={AGENT_ID}, agentAliasId={AGENT_ALIAS}, region={REGION}")
 
 # --- Initialize Bedrock Runtime client ---
 try:
