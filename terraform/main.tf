@@ -35,9 +35,8 @@ module "artifacts" {
 # Managed OpenSearch Domain (demo)
 #############################################
 module "opensearch" {
-  source               = "./modules/opensearch_managed"
-  domain_name          = "tastetrend-demo"
-  master_user_password = var.opensearch_master_password
+  source      = "./modules/opensearch_managed"
+  domain_name = "tastetrend-demo"
 }
 
 #############################################

@@ -43,9 +43,3 @@ variable "profile" {
   type        = string
   default     = null
 }
-
-variable "opensearch_master_password" {
-  description = "Master user password for the managed OpenSearch domain"
-  type        = string
-  sensitive   = true
-}
