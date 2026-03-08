@@ -10,7 +10,7 @@ resource "aws_lambda_function" "this" {
 
   # Use pre-uploaded artifact from S3
   s3_bucket = var.zip_bucket
-  s3_key    = "lambda/api-${var.lambda_version}.zip"
+  s3_key    = "lambda/etl-${var.lambda_version}.zip"
 
   timeout       = 900
   memory_size   = 3008

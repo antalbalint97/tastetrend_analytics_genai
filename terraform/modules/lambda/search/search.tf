@@ -9,7 +9,7 @@ resource "aws_lambda_function" "this" {
   runtime       = "python3.11"
 
   s3_bucket = var.zip_bucket
-  s3_key    = "lambda/api-${var.lambda_version}.zip"
+  s3_key    = "lambda/search-${var.lambda_version}.zip"
 
   timeout     = 30
   memory_size = 512

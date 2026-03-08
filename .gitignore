@@ -65,6 +65,7 @@ data/
 
 # Exclude .txt from data dirs only (keep terraform/modules/**/*.txt tracked)
 /*.txt
+!requirements-lambda.txt
 data/**/*.txt
 
 # ----------------

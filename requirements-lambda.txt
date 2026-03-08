@@ -1,0 +1,7 @@
+# Python packages installed into each Lambda zip artifact.
+# Only third-party packages that are NOT provided by the Lambda runtime
+# (boto3, botocore) or Lambda Layers (pandas, numpy via AWSSDKPandas) go here.
+
+opensearch-py
+requests
+requests-aws4auth
