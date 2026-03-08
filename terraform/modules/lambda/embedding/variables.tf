@@ -35,9 +35,3 @@ variable "index_name" {
   description = "OpenSearch index name"
   type        = string
 }
-
-variable "aws_region" {
-  description = "AWS region"
-  type        = string
-  default     = "eu-central-1"
-}
