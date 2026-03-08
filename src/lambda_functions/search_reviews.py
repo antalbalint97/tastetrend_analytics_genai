@@ -1,6 +1,7 @@
 import json
 import boto3
 import os
+import re
 import requests
 from requests_aws4auth import AWS4Auth
 
@@ -9,6 +10,17 @@ OPENSEARCH_URL = os.environ["OPENSEARCH_URL"]
 INDEX_NAME = os.environ.get("INDEX_NAME", "reviews")
 MODEL_ID = "amazon.titan-embed-text-v2:0"
 REGION = os.environ.get("AWS_REGION", "eu-central-1")
+
+# Known restaurant / location names for metadata-aware filtering.
+# Extend via the KNOWN_LOCATIONS env var (comma-separated).
+_DEFAULT_LOCATIONS = ["Riverside", "Uptown", "Downtown", "Midtown", "Lakeside"]
+KNOWN_LOCATIONS = [
+    loc.strip()
+    for loc in os.environ.get(
+        "KNOWN_LOCATIONS", ",".join(_DEFAULT_LOCATIONS)
+    ).split(",")
+    if loc.strip()
+]
 
 # === AWS clients and auth setup ===
 session = boto3.Session()
@@ -34,6 +46,16 @@ def get_embedding(query: str):
     )
     payload = json.loads(resp["body"].read())
     return payload["embedding"]
+
+
+def _detect_location(query: str):
+    """Return the first known location name found in *query* (case-insensitive), or None."""
+    query_lower = query.lower()
+    for loc in KNOWN_LOCATIONS:
+        # Use word-boundary check so "Downtown" won't accidentally match inside another word.
+        if re.search(r'\b' + re.escape(loc.lower()) + r'\b', query_lower):
+            return loc
+    return None
 
 
 def _extract_query_from_event(event):
@@ -82,13 +104,22 @@ def lambda_handler(event, context):
 
     print(f"[INFO] Processing search query: {query}")
 
+    # --- Detect location for metadata filtering ---
+    location = _detect_location(query)
+    if location:
+        print(f"[INFO] Detected location filter: {location}")
+
     # --- Generate embedding ---
     emb = get_embedding(query)
 
-    # --- Perform vector search in OpenSearch using `embedding` field ---
+    # --- Build OpenSearch query: filtered KNN when a location is detected ---
+    knn_body = {"vector": emb, "k": 5}
+    if location:
+        knn_body["filter"] = {"term": {"restaurant_name": location}}
+
     search_payload = {
         "size": 5,
-        "query": {"knn": {"embedding": {"vector": emb, "k": 5}}},
+        "query": {"knn": {"embedding": knn_body}},
         "_source": ["review_id", "text", "restaurant_name", "rating"]
     }
 
