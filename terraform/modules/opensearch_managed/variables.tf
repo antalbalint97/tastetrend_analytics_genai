@@ -32,14 +32,4 @@ variable "volume_size" {
   default     = 20
 }
 
-variable "master_user_name" {
-  description = "Master user name for fine-grained access control"
-  type        = string
-  default     = "admin"
-}
 
-variable "master_user_password" {
-  description = "Master user password for fine-grained access control"
-  type        = string
-  sensitive   = true
-}
