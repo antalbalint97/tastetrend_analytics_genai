@@ -99,7 +99,6 @@ resource "aws_iam_policy" "proxy_policy" {
   })
 }
 
-
 resource "aws_iam_role_policy_attachment" "proxy_attach" {
   role       = aws_iam_role.proxy_lambda_role.name
   policy_arn = aws_iam_policy.proxy_policy.arn
@@ -120,19 +119,15 @@ resource "aws_iam_policy" "search_policy" {
     Statement = [
       {
         Effect = "Allow",
-        Action = [
-          "aoss:APIAccessAll"
-        ],
+        Action = ["es:ESHttpGet", "es:ESHttpPost", "es:ESHttpPut", "es:ESHttpHead"],
         Resource = [
-          var.opensearch_collection_arn,
-          "${var.opensearch_collection_arn}/*"
+          var.opensearch_domain_arn,
+          "${var.opensearch_domain_arn}/*"
         ]
       },
       {
-        Effect = "Allow",
-        Action = [
-          "bedrock:InvokeModel"
-        ],
+        Effect   = "Allow",
+        Action   = ["bedrock:InvokeModel"],
         Resource = "arn:aws:bedrock:${data.aws_region.current.id}::foundation-model/amazon.titan-embed-text-v2:0"
       },
       {
@@ -149,9 +144,57 @@ resource "aws_iam_role_policy_attachment" "search_attach" {
   policy_arn = aws_iam_policy.search_policy.arn
 }
 
+#############################################
+# EMBEDDING LAMBDA ROLE (OpenSearch + Bedrock + S3 + Logs)
+#############################################
+resource "aws_iam_role" "embedding_lambda_role" {
+  name               = "tt-embedding-lambda-role"
+  assume_role_policy = data.aws_iam_policy_document.lambda_assume.json
+}
 
+resource "aws_iam_policy" "embedding_policy" {
+  name = "tt-embedding-lambda-policy"
+  policy = jsonencode({
+    Version = "2012-10-17",
+    Statement = [
+      {
+        Effect = "Allow",
+        Action = ["es:ESHttpGet", "es:ESHttpPost", "es:ESHttpPut", "es:ESHttpHead", "es:ESHttpDelete"],
+        Resource = [
+          var.opensearch_domain_arn,
+          "${var.opensearch_domain_arn}/*"
+        ]
+      },
+      {
+        Effect   = "Allow",
+        Action   = ["bedrock:InvokeModel"],
+        Resource = "arn:aws:bedrock:${data.aws_region.current.id}::foundation-model/amazon.titan-embed-text-v2:0"
+      },
+      {
+        Effect = "Allow",
+        Action = ["s3:GetObject", "s3:ListBucket"],
+        Resource = flatten([for b in var.bucket_names : [
+          "arn:aws:s3:::${b}",
+          "arn:aws:s3:::${b}/*"
+        ]])
+      },
+      {
+        Effect   = "Allow",
+        Action   = ["logs:CreateLogGroup", "logs:CreateLogStream", "logs:PutLogEvents"],
+        Resource = "*"
+      }
+    ]
+  })
+}
 
-# IAM Role for Bedrock Agent
+resource "aws_iam_role_policy_attachment" "embedding_attach" {
+  role       = aws_iam_role.embedding_lambda_role.name
+  policy_arn = aws_iam_policy.embedding_policy.arn
+}
+
+#############################################
+# BEDROCK AGENT ROLE
+#############################################
 resource "aws_iam_role" "bedrock_agent_role" {
   name = "tt-bedrock-agent-role"
 
@@ -159,11 +202,9 @@ resource "aws_iam_role" "bedrock_agent_role" {
     Version = "2012-10-17",
     Statement = [
       {
-        Effect = "Allow",
-        Principal = {
-          Service = "bedrock.amazonaws.com"
-        },
-        Action = "sts:AssumeRole"
+        Effect    = "Allow",
+        Principal = { Service = "bedrock.amazonaws.com" },
+        Action    = "sts:AssumeRole"
       }
     ]
   })
@@ -174,21 +215,19 @@ resource "aws_iam_role" "bedrock_agent_role" {
   }
 }
 
-# Policy for Bedrock Agent
 resource "aws_iam_policy" "bedrock_agent_policy" {
   name = "tt-bedrock-agent-policy"
 
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
-      # 1. Bedrock + Bedrock Agent Runtime + Logs + KMS
       {
-        Sid = "AllowBedrockAgentCoreAccess",
+        Sid    = "AllowBedrockAgentCoreAccess",
         Effect = "Allow",
         Action = [
-          "bedrock:*",
-          "bedrock-agent:*",
-          "bedrock-agent-runtime:*",
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream",
+          "lambda:InvokeFunction",
           "kms:Decrypt",
           "kms:GenerateDataKey",
           "logs:CreateLogGroup",
@@ -196,39 +235,11 @@ resource "aws_iam_policy" "bedrock_agent_policy" {
           "logs:PutLogEvents"
         ],
         Resource = "*"
-      },
-
-      # 2. Explicit OpenSearch Serverless access for Knowledge Base storage
-      {
-        Sid = "AllowOpenSearchServerlessAccess",
-        Effect = "Allow",
-        Action = [
-          # Core OpenSearch Serverless collection actions
-          "aoss:APIAccessAll",
-          "aoss:ListCollections",
-          "aoss:BatchGetCollection",
-          "aoss:DescribeCollection",
-
-          # Document-level actions for Bedrock KB
-          "aoss:ReadDocument",
-          "aoss:WriteDocument",
-
-          # Index-level actions (required for KB auto-index creation)
-          "aoss:CreateIndex",
-          "aoss:UpdateIndex",
-          "aoss:DescribeIndex"
-        ],
-        Resource = [
-          var.opensearch_collection_arn,
-          "${var.opensearch_collection_arn}/*"
-        ]
       }
     ]
   })
 }
 
-
-# Attach policy to Bedrock Agent role
 resource "aws_iam_role_policy_attachment" "bedrock_agent_attach" {
   role       = aws_iam_role.bedrock_agent_role.name
   policy_arn = aws_iam_policy.bedrock_agent_policy.arn

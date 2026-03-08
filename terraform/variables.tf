@@ -26,18 +26,6 @@ variable "api_key_hash" {
   sensitive   = true
 }
 
-variable "role_arn" {
-  description = "IAM role ARN that the Bedrock Agent will assume"
-  type        = string
-  default     = ""
-}
-
-variable "kms_key_arn" {
-  description = "KMS key ARN for encryption"
-  type        = string
-  default     = ""
-}
-
 variable "index_name" {
   description = "Name of the OpenSearch index to query"
   type        = string
@@ -47,7 +35,7 @@ variable "index_name" {
 variable "region" {
   description = "AWS region to deploy resources in"
   type        = string
-  default     = "eu-central-1" # or your preferred region
+  default     = "eu-central-1"
 }
 
 variable "profile" {
@@ -56,8 +44,8 @@ variable "profile" {
   default     = null
 }
 
-variable "collection_name" {
-  description = "Name of the OpenSearch Serverless collection"
+variable "opensearch_master_password" {
+  description = "Master user password for the managed OpenSearch domain"
   type        = string
-  default     = "tastetrend"
+  sensitive   = true
 }

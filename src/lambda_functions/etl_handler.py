@@ -5,7 +5,7 @@ TasteTrend Analytics — ETL Lambda (batch)
 
 Event examples:
   { "action": "etl", "bucket": "tastetrend-dev-raw-123456789012" }
-  { "action": "etl", "bucket": "...", "trigger_embedding": true, "os_index": "reviews_v1" }
+  { "action": "etl", "bucket": "...", "trigger_embedding": true, "os_index": "reviews" }
 """
 
 import json
@@ -41,7 +41,7 @@ def handler(event, context):
         if event.get("trigger_embedding"):
             processed_bucket = body.get("processed_bucket")
             csv_key = "processed/processed_final.csv"
-            os_index = event.get("os_index", "reviews_v1")
+            os_index = event.get("os_index", "reviews")
 
             if not processed_bucket:
                 return {

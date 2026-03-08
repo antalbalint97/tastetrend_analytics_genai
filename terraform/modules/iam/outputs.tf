@@ -24,7 +24,12 @@ output "search_lambda_role_name" {
   value       = aws_iam_role.search_lambda_role.name
 }
 
+output "embedding_lambda_role_arn" {
+  description = "ARN of the Embedding Lambda IAM role"
+  value       = aws_iam_role.embedding_lambda_role.arn
+}
 
+output "bedrock_agent_role_arn" {
   description = "ARN of the Bedrock Agent IAM role"
   value       = aws_iam_role.bedrock_agent_role.arn
 }
