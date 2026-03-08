@@ -10,7 +10,7 @@ locals {
   prefix     = "${local.project}-${local.env}"
   account    = data.aws_caller_identity.me.account_id
   zip_bucket = "${local.prefix}-artifacts-${local.account}"
-  zip_key = "lambda/api-${var.lambda_version}.zip"
+  zip_key    = "lambda/api-${var.lambda_version}.zip"
 }
 
 #############################################
@@ -32,13 +32,22 @@ module "artifacts" {
 }
 
 #############################################
+# Managed OpenSearch Domain (demo)
+#############################################
+module "opensearch" {
+  source               = "./modules/opensearch_managed"
+  domain_name          = "tastetrend-demo"
+  master_user_password = var.opensearch_master_password
+}
+
+#############################################
 # IAM
 #############################################
 module "iam" {
-  source         = "./modules/iam"
-  agent_id       = module.bedrock_agent.agent_id
-  bucket_names   = [module.raw.bucket_name, module.processed.bucket_name]
-  opensearch_collection_arn = module.opensearch.opensearch_collection_arn
+  source                = "./modules/iam"
+  agent_id              = module.bedrock_agent.agent_id
+  bucket_names          = [module.raw.bucket_name, module.processed.bucket_name]
+  opensearch_domain_arn = module.opensearch.domain_arn
 }
 
 #############################################
@@ -53,7 +62,6 @@ resource "aws_kms_key" "main" {
   policy = jsonencode({
     Version = "2012-10-17",
     Statement = [
-      # Root full access
       {
         Sid      = "AllowRootAccountFullAccess",
         Effect   = "Allow",
@@ -63,8 +71,6 @@ resource "aws_kms_key" "main" {
         Action   = "kms:*",
         Resource = "*"
       },
-
-      # AWS service-level access
       {
         Sid    = "AllowAWSServiceUse",
         Effect = "Allow",
@@ -83,8 +89,6 @@ resource "aws_kms_key" "main" {
         ],
         Resource = "*"
       },
-
-      # Specific roles: Bedrock Agent + Proxy Lambda + ETL Lambda
       {
         Sid = "AllowBedrockAndLambdas",
         Effect = "Allow",
@@ -93,7 +97,8 @@ resource "aws_kms_key" "main" {
             "arn:aws:iam::${data.aws_caller_identity.me.account_id}:role/tt-bedrock-agent-role",
             "arn:aws:iam::${data.aws_caller_identity.me.account_id}:role/tt-proxy-lambda-role",
             "arn:aws:iam::${data.aws_caller_identity.me.account_id}:role/tt-etl-lambda-role",
-            "arn:aws:iam::${data.aws_caller_identity.me.account_id}:role/tt-search-lambda-role"
+            "arn:aws:iam::${data.aws_caller_identity.me.account_id}:role/tt-search-lambda-role",
+            "arn:aws:iam::${data.aws_caller_identity.me.account_id}:role/tt-embedding-lambda-role"
           ]
         },
         Action = [
@@ -132,29 +137,41 @@ module "lambda_etl" {
 }
 
 #############################################
-# OpenSearch Serverless
+# Embedding Lambda
 #############################################
-module "opensearch" {
-  source = "./modules/opensearch_serverless"
-  collection_name        = "tastetrend-vectorstore"
-  bedrock_agent_role_arn = module.iam.bedrock_agent_role_arn
-  search_lambda_role_arn = module.iam.search_lambda_role_arn
-  description            = "Vector collection for TasteTrend Bedrock knowledge base"
-  index_name      = var.index_name
+module "lambda_embedding" {
+  source              = "./modules/lambda/embedding"
+  function_name       = "${local.prefix}-embedding"
+  role_arn            = module.iam.embedding_lambda_role_arn
+  zip_bucket          = local.zip_bucket
+  zip_key             = local.zip_key
+  lambda_version      = var.lambda_version
+  opensearch_endpoint = module.opensearch.domain_endpoint
+  index_name          = var.index_name
 }
 
 #############################################
-# Bedrock Agent + Knowledge Base
+# Search Lambda (vector search for Bedrock Agent action group)
+#############################################
+module "lambda_search" {
+  source         = "./modules/lambda/search"
+  function_name  = "${local.prefix}-search"
+  role_arn       = module.iam.search_lambda_role_arn
+  zip_bucket     = local.zip_bucket
+  zip_key        = local.zip_key
+  lambda_version = var.lambda_version
+  opensearch_url = "https://${module.opensearch.domain_endpoint}"
+  index_name     = var.index_name
+}
+
+#############################################
+# Bedrock Agent + Action Group
 #############################################
 module "bedrock_agent" {
-  source                    = "./modules/bedrock_agent"
-  agent_name                = "tastetrend-agent"
-  kb_name                   = "tastetrend-knowledge-base"
-  role_arn                  = module.iam.bedrock_agent_role_arn
-  kms_key_arn               =  aws_kms_key.main.arn
-  processed_bucket          = module.processed.bucket_name
-  opensearch_collection_arn = module.opensearch.opensearch_collection_arn
-  index_name                = module.opensearch.opensearch_index_name
+  source            = "./modules/bedrock_agent"
+  agent_name        = "tastetrend-agent"
+  role_arn          = module.iam.bedrock_agent_role_arn
+  search_lambda_arn = module.lambda_search.lambda_arn
 }
 
 #############################################
@@ -170,9 +187,13 @@ resource "aws_iam_policy" "proxy_agent_invoke" {
         Sid: "AllowInvokeBedrockAgent",
         Effect: "Allow",
         Action: [
-          "bedrock-agent:InvokeAgent"
+          "bedrock-agent:InvokeAgent",
+          "bedrock-agent-runtime:InvokeAgent"
         ],
-        Resource: "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.me.account_id}:agent/${module.bedrock_agent.agent_id}"
+        Resource: [
+          "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.me.account_id}:agent/${module.bedrock_agent.agent_id}",
+          "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.me.account_id}:agent-alias/${module.bedrock_agent.agent_id}/*"
+        ]
       }
     ]
   })
@@ -182,21 +203,6 @@ resource "aws_iam_policy" "proxy_agent_invoke" {
 resource "aws_iam_role_policy_attachment" "proxy_agent_attach" {
   role       = module.iam.proxy_lambda_role_name
   policy_arn = aws_iam_policy.proxy_agent_invoke.arn
-}
-
-
-#############################################
-# Search Lambda (vector search for Bedrock Agent action group)
-#############################################
-module "lambda_search" {
-  source         = "./modules/lambda/search"
-  function_name  = "${local.prefix}-search"
-  role_arn       = module.iam.search_lambda_role_arn
-  zip_bucket     = local.zip_bucket
-  zip_key        = local.zip_key
-  lambda_version = var.lambda_version
-  opensearch_url = module.opensearch.opensearch_collection_endpoint
-  index_name     = var.index_name
 }
 
 #############################################
@@ -209,7 +215,7 @@ module "lambda_proxy" {
   agent_id       = module.bedrock_agent.agent_id
   agent_alias_id = module.bedrock_agent.agent_alias_id
   api_key_hash   = var.api_key_hash
-  kms_key_arn    =  aws_kms_key.main.arn
+  kms_key_arn    = aws_kms_key.main.arn
   zip_bucket     = local.zip_bucket
   zip_key        = local.zip_key
   lambda_version = var.lambda_version

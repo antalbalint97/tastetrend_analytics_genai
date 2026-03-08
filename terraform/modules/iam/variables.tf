@@ -10,7 +10,7 @@ variable "agent_id" {
   type        = string
 }
 
-variable "opensearch_collection_arn" {
-  description = "ARN of the OpenSearch Serverless collection for Bedrock KB"
+variable "opensearch_domain_arn" {
+  description = "ARN of the managed OpenSearch domain"
   type        = string
 }

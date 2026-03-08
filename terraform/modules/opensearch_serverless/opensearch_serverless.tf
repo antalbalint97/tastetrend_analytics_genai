@@ -1,15 +1,23 @@
 #############################################
-# OpenSearch Serverless Collection
+# DEPRECATED — OpenSearch Serverless Collection
+# ============================================
+# This module is no longer used in the active demo flow.
+# The project has switched to a managed OpenSearch domain
+# defined in modules/opensearch_managed/.
+# Kept here for reference only.
 #############################################
 
-terraform {
-  required_providers {
-    opensearch = {
-      source  = "opensearch-project/opensearch"
-      version = ">= 2.0.0"
-    }
-  }
-}
+# DEPRECATED — This module is no longer used in the active demo flow.
+# See modules/opensearch_managed/ for the current setup.
+
+# terraform {
+#   required_providers {
+#     opensearch = {
+#       source  = "opensearch-project/opensearch"
+#       version = ">= 2.0.0"
+#     }
+#   }
+# }
 
 
 data "aws_caller_identity" "current" {}
