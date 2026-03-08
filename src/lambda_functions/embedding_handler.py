@@ -213,6 +213,29 @@ def _iter_records(records, counters):
             continue
 
 
+def _verify_index_count(index_name, expected_count):
+    """Query OpenSearch _count API and compare with expected document count."""
+    try:
+        resp = os_client.count(index=index_name)
+        actual_count = resp.get("count", 0)
+        match = actual_count == expected_count
+        print(f"[INFO] Verification: index '{index_name}' has {actual_count} docs, "
+              f"expected {expected_count}, match={match}")
+        return {
+            "expected_documents": expected_count,
+            "verified_document_count": actual_count,
+            "count_matches": match,
+        }
+    except Exception as e:
+        print(f"[WARN] Verification failed for index '{index_name}' "
+              f"(expected {expected_count} docs): {e}")
+        return {
+            "expected_documents": expected_count,
+            "verified_document_count": None,
+            "count_matches": False,
+        }
+
+
 def _process_batch(batch, index_name, counters, warnings):
     """Embed and index a batch of documents. Updates *counters* and *warnings* in place."""
     batch_size = len(batch)
@@ -307,6 +330,8 @@ def handler(event, context):
     status = "ok" if counters["failed_rows"] == 0 else "partial"
     status_code = 200 if counters["failed_rows"] == 0 else 207
 
+    verification = _verify_index_count(index_name, valid)
+
     return {
         "statusCode": status_code,
         "body": json.dumps({
@@ -319,6 +344,9 @@ def handler(event, context):
             "indexed_rows": counters["indexed_rows"],
             "failed_rows": counters["failed_rows"],
             "success_rate": round(success_rate, 4),
+            "expected_documents": verification["expected_documents"],
+            "verified_document_count": verification["verified_document_count"],
+            "count_matches": verification["count_matches"],
             "warnings": warnings,
         }),
     }
