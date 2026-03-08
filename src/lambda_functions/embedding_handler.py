@@ -39,7 +39,7 @@ os_client = OpenSearch(
 
 
 EMBED_MODEL = "amazon.titan-embed-text-v2:0"
-VECTOR_DIM  = int(os.getenv("VECTOR_DIM", "1536"))
+VECTOR_DIM  = int(os.getenv("VECTOR_DIM", "1024"))   # Titan v2 default output is 1024-dim
 BATCH       = int(os.getenv("BATCH_SIZE", "8"))
 
 
@@ -49,10 +49,18 @@ def _ensure_index(index_name: str):
         try:
             mapping = os_client.indices.get_mapping(index=index_name)
             props = mapping[index_name]["mappings"].get("properties", {})
-            if "embedding" in props and props["embedding"].get("type") == "knn_vector":
-                print(f"[INFO] Index '{index_name}' exists with correct mapping — skipping creation.")
+            emb_props = props.get("embedding", {})
+            existing_dim = emb_props.get("dimension")
+            if (
+                emb_props.get("type") == "knn_vector"
+                and existing_dim == VECTOR_DIM
+            ):
+                print(f"[INFO] Index '{index_name}' exists with correct mapping "
+                      f"(dimension={existing_dim}) — skipping creation.")
                 return
-            print(f"[WARN] Index '{index_name}' has stale mapping — deleting and recreating.")
+            print(f"[WARN] Index '{index_name}' mapping mismatch "
+                  f"(existing dimension={existing_dim}, required={VECTOR_DIM}) "
+                  f"— deleting and recreating.")
             os_client.indices.delete(index=index_name)
         except Exception as e:
             print(f"[WARN] Could not validate mapping for '{index_name}': {e} — recreating.")
@@ -107,8 +115,14 @@ def _bulk_upsert(index_name, docs):
         for d in docs
     ]
     if actions:
-        success, failed = bulk(os_client, actions)
-        print(f"[INFO] Bulk upsert: {success} succeeded, {failed} failed")
+        try:
+            success, failed = bulk(os_client, actions, raise_on_error=True)
+            print(f"[INFO] Bulk upsert: {success} succeeded, {failed} failed")
+        except Exception as e:
+            print(f"[ERROR] Bulk upsert failed for index '{index_name}': {e}")
+            raise RuntimeError(
+                f"OpenSearch bulk upsert failed for index '{index_name}': {e}"
+            ) from e
 
 
 def _iter_csv_rows(
@@ -183,7 +197,15 @@ def handler(event, context):
     """
     start_time = time.time()
     index_name = event.get("os_index", DEFAULT_IDX)
-    _ensure_index(index_name)
+
+    try:
+        _ensure_index(index_name)
+    except Exception as e:
+        print(f"[ERROR] Failed to ensure index '{index_name}': {e}")
+        return {
+            "statusCode": 500,
+            "body": json.dumps({"error": f"Index setup failed: {e}"}),
+        }
 
     # Source: S3 CSV or direct records
     if "s3_csv_uri" in event:
@@ -198,14 +220,20 @@ def handler(event, context):
 
     batch = []
     ingested = 0
+    errors = []
     for doc in docs_iter:
         batch.append(doc)
         if len(batch) >= BATCH:
-            vecs = _embed_batch([d["text"] for d in batch])
-            for d, v in zip(batch, vecs):
-                d["embedding"] = v
-            _bulk_upsert(index_name, batch)
-            ingested += len(batch)
+            try:
+                vecs = _embed_batch([d["text"] for d in batch])
+                for d, v in zip(batch, vecs):
+                    d["embedding"] = v
+                _bulk_upsert(index_name, batch)
+                ingested += len(batch)
+            except Exception as e:
+                msg = f"Batch starting at record {ingested}: {e}"
+                print(f"[ERROR] {msg}")
+                errors.append(msg)
 
             if ingested % 500 == 0 and ingested > 0:
                 elapsed = time.time() - start_time
@@ -214,14 +242,31 @@ def handler(event, context):
             batch = []
 
     if batch:
-        vecs = _embed_batch([d["text"] for d in batch])
-        for d, v in zip(batch, vecs):
-            d["embedding"] = v
-        _bulk_upsert(index_name, batch)
-        ingested += len(batch)
+        try:
+            vecs = _embed_batch([d["text"] for d in batch])
+            for d, v in zip(batch, vecs):
+                d["embedding"] = v
+            _bulk_upsert(index_name, batch)
+            ingested += len(batch)
+        except Exception as e:
+            msg = f"Final batch at record {ingested}: {e}"
+            print(f"[ERROR] {msg}")
+            errors.append(msg)
 
     total_elapsed = time.time() - start_time
     print(f"[PROGRESS] Completed embedding. Total records: {ingested} in {total_elapsed:.1f}s")
+
+    if errors:
+        print(f"[WARN] {len(errors)} batch error(s) during ingestion")
+        return {
+            "statusCode": 207,
+            "body": json.dumps({
+                "status": "partial",
+                "index": index_name,
+                "ingested": ingested,
+                "errors": errors,
+            }),
+        }
 
     return {
         "statusCode": 200,

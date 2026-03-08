@@ -87,6 +87,24 @@ aws lambda invoke \
 cat /tmp/embed_output.json | jq .
 ```
 
+### Recreating the OpenSearch Index (if needed)
+
+If you previously created the `reviews` index with a different vector dimension
+(e.g. 1536 instead of 1024), bulk indexing will fail with a
+`mapper_parsing_exception` ("Vector dimension mismatch"). The embedding Lambda
+now auto-detects and recreates mismatched indices, but you can also delete it
+manually using the AWS CLI before re-running ingestion:
+
+```bash
+# Replace <OS_ENDPOINT> with the OpenSearch domain endpoint (without https://)
+curl -X DELETE "https://<OS_ENDPOINT>/reviews" \
+  --aws-sigv4 "aws:amz:eu-central-1:es" \
+  --user "$AWS_ACCESS_KEY_ID:$AWS_SECRET_ACCESS_KEY"
+```
+
+Then re-invoke the embedding Lambda — it will create the index with the correct
+1024-dimensional mapping automatically.
+
 ---
 
 ## 4. Test the Backend
