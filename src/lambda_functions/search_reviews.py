@@ -99,6 +99,78 @@ def _extract_query_from_event(event):
     )
 
 
+def _build_knn_payload(emb, location=None):
+    """Build the OpenSearch search payload.
+
+    If *location* is provided the query is a ``bool`` with a ``filter`` on
+    ``restaurant_name`` and a ``must`` KNN clause on ``embedding``.
+    Otherwise a plain KNN query on ``embedding`` is used.
+    """
+    knn_clause = {"embedding": {"vector": emb, "k": 5}}
+
+    if location:
+        payload = {
+            "size": 5,
+            "query": {
+                "bool": {
+                    "filter": {"term": {"restaurant_name": location}},
+                    "must": {"knn": knn_clause},
+                }
+            },
+            "_source": ["review_id", "text", "restaurant_name", "rating"],
+        }
+    else:
+        payload = {
+            "size": 5,
+            "query": {"knn": knn_clause},
+            "_source": ["review_id", "text", "restaurant_name", "rating"],
+        }
+    return payload
+
+
+def _execute_search(payload):
+    """POST a search payload to OpenSearch and return ``(response_json, hits)``."""
+    print(f"[DEBUG] OpenSearch payload: {json.dumps(payload, default=str)}")
+
+    resp = requests.post(
+        f"{OPENSEARCH_URL}/{INDEX_NAME}/_search",
+        auth=awsauth,
+        headers={"Content-Type": "application/json"},
+        data=json.dumps(payload),
+    )
+
+    print(f"[INFO] OpenSearch status: {resp.status_code}")
+
+    try:
+        response_json = resp.json()
+    except Exception as e:
+        print("[ERROR] Error parsing OpenSearch response:", str(e))
+        return {}, []
+
+    print(f"[DEBUG] OpenSearch response body: {json.dumps(response_json, default=str)}")
+
+    hits = response_json.get("hits", {}).get("hits", [])
+    return response_json, hits
+
+
+def _hits_to_results(hits):
+    """Convert raw OpenSearch hits into the response result list."""
+    results = []
+    for r in hits:
+        src = r.get("_source", {})
+        try:
+            rating = float(src.get("rating", 0))
+        except (ValueError, TypeError):
+            rating = 0.0
+        results.append({
+            "review_id": src.get("review_id", ""),
+            "restaurant_name": src.get("restaurant_name") or src.get("location") or "Unknown",
+            "rating": rating,
+            "text": src.get("text", ""),
+        })
+    return results
+
+
 def lambda_handler(event, context):
     """Lambda entry point — compatible with both Bedrock Agent action group and direct invocation."""
     print("[INFO] Event received:", json.dumps(event, default=str))
@@ -123,52 +195,37 @@ def lambda_handler(event, context):
     # --- Generate embedding ---
     emb = get_embedding(query)
 
-    # --- Build OpenSearch query: filtered KNN when a location is detected ---
-    knn_body = {"vector": emb, "k": 5}
+    # --- Search OpenSearch ---
+    warning = None
+
     if location:
-        knn_body["filter"] = {"term": {"restaurant_name": location}}
+        print("[DEBUG] Using filtered (location-aware) retrieval")
+        payload = _build_knn_payload(emb, location=location)
+        _, hits = _execute_search(payload)
 
-    search_payload = {
-        "size": 5,
-        "query": {"knn": {"embedding": knn_body}},
-        "_source": ["review_id", "text", "restaurant_name", "rating"]
-    }
+        if not hits:
+            print("[WARN] Filtered search returned 0 hits — falling back to unfiltered semantic search")
+            warning = (
+                f"No results for location '{location}'. "
+                "Falling back to unfiltered semantic search."
+            )
+            payload = _build_knn_payload(emb, location=None)
+            _, hits = _execute_search(payload)
+            print("[DEBUG] Fallback unfiltered retrieval used")
+    else:
+        print("[DEBUG] Using unfiltered semantic retrieval")
+        payload = _build_knn_payload(emb, location=None)
+        _, hits = _execute_search(payload)
 
-    resp = requests.post(
-        f"{OPENSEARCH_URL}/{INDEX_NAME}/_search",
-        auth=awsauth,
-        headers={"Content-Type": "application/json"},
-        data=json.dumps(search_payload)
-    )
-
-    print(f"[INFO] OpenSearch status: {resp.status_code}")
-
-    # --- Parse results safely ---
-    hits = []
-    try:
-        response_json = resp.json()
-        hits = response_json.get("hits", {}).get("hits", [])
-    except Exception as e:
-        print("[ERROR] Error parsing OpenSearch response:", str(e))
-
-    results = []
-    for r in hits:
-        src = r.get("_source", {})
-        try:
-            rating = float(src.get("rating", 0))
-        except (ValueError, TypeError):
-            rating = 0.0
-        results.append({
-            "review_id": src.get("review_id", ""),
-            "restaurant_name": src.get("restaurant_name") or src.get("location") or "Unknown",
-            "rating": rating,
-            "text": src.get("text", "")
-        })
+    results = _hits_to_results(hits)
 
     print(f"[INFO] Found {len(results)} review matches.")
 
     # --- Build response (Bedrock Agent action group compatible) ---
-    response_body = json.dumps({"results": results})
+    response_data = {"results": results}
+    if warning:
+        response_data["warning"] = warning
+    response_body = json.dumps(response_data)
 
     # If this is a Bedrock Agent action group invocation, return agent-compatible format
     if "actionGroup" in event:
