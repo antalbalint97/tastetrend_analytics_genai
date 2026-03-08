@@ -23,8 +23,10 @@ def _extract_agent_id(raw: str) -> str:
       - agent ARN: "arn:aws:bedrock:REGION:ACCOUNT:agent/IVEGCZX9LV"
     """
     if raw.startswith("arn:"):
-        # ARN format: arn:aws:bedrock:REGION:ACCOUNT:agent/AGENT_ID
-        return raw.rsplit("/", 1)[-1]
+        parts = raw.split("/")
+        if len(parts) >= 2 and ":agent/" in raw:
+            return parts[-1]
+        raise ValueError(f"[INIT] Unexpected agent ARN format: {raw}")
     return raw.strip()
 
 
@@ -36,8 +38,12 @@ def _extract_alias_id(raw: str) -> str:
       - alias ARN:  "arn:aws:bedrock:REGION:ACCOUNT:agent-alias/AGENT_ID/ALIAS_ID"
     """
     if raw.startswith("arn:"):
-        # ARN format: arn:aws:bedrock:REGION:ACCOUNT:agent-alias/AGENT_ID/ALIAS_ID
-        return raw.rsplit("/", 1)[-1]
+        parts = raw.split("/")
+        if len(parts) >= 3 and ":agent-alias/" in raw:
+            return parts[-1]
+        if len(parts) >= 2 and ":agent/" in raw:
+            return parts[-1]
+        raise ValueError(f"[INIT] Unexpected alias ARN format: {raw}")
     return raw.strip()
 
 
