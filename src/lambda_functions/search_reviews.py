@@ -1,9 +1,12 @@
-import json, boto3, os, requests
+import json
+import boto3
+import os
+import requests
 from requests_aws4auth import AWS4Auth
 
 # === Environment variables ===
 OPENSEARCH_URL = os.environ["OPENSEARCH_URL"]
-INDEX_NAME = os.environ["INDEX_NAME"]
+INDEX_NAME = os.environ.get("INDEX_NAME", "reviews")
 MODEL_ID = "amazon.titan-embed-text-v2:0"
 REGION = os.environ.get("AWS_REGION", "eu-central-1")
 
@@ -33,107 +36,19 @@ def get_embedding(query: str):
     return payload["embedding"]
 
 
-# def lambda_handler(event, context):
-#     """Lambda entry point for Bedrock Agent Action Group."""
-#     print("Event received:", json.dumps(event, default=str))
+def _extract_query_from_event(event):
+    """Extract the query string from various event formats (API GW, Bedrock Agent, direct)."""
+    # Bedrock Agent action group format
+    if "inputText" in event:
+        return event["inputText"]
 
-#     # --- Extract query safely (supports both 'q' and 'query') ---
-#     body = {}
-#     if isinstance(event.get("body"), str):
-#         try:
-#             body = json.loads(event["body"])
-#         except Exception:
-#             body = {}
-#     elif isinstance(event.get("body"), dict):
-#         body = event.get("body", {})
+    # Check parameters array (Bedrock Agent action group)
+    if "parameters" in event and isinstance(event["parameters"], list):
+        for param in event["parameters"]:
+            if param.get("name") == "query" and param.get("value"):
+                return param["value"]
 
-#     query = (
-#         body.get("query") or
-#         body.get("q") or
-#         event.get("query") or
-#         event.get("q")
-#     )
-
-#     if not query:
-#         return {
-#             "responseBody": {
-#                 "application/json": {"error": "Missing 'query' parameter"}
-#             },
-#             "responseHeaders": {"Content-Type": "application/json"},
-#             "statusCode": 400
-#         }
-
-#     print(f"Processing query: {query}")
-
-#     # --- Generate embedding ---
-#     emb = get_embedding(query)
-
-#     # --- Perform vector search in OpenSearch ---
-#     search_payload = {
-#         "size": 5,
-#         "query": {"knn": {"vector": {"vector": emb, "k": 5}}},
-#         "_source": ["text", "restaurant_name", "review_id"]
-#     }
-
-#     resp = requests.post(
-#         f"{OPENSEARCH_URL}/{INDEX_NAME}/_search",
-#         auth=awsauth,
-#         headers={"Content-Type": "application/json"},
-#         data=json.dumps(search_payload)
-#     )
-
-#     print("OpenSearch status:", resp.status_code)
-#     print("OpenSearch body:", resp.text)
-
-#     # --- Parse results safely ---
-#     hits = []
-#     try:
-#         response_json = resp.json()
-#         hits = response_json.get("hits", {}).get("hits", [])
-#     except Exception as e:
-#         print("Error parsing OpenSearch response:", str(e))
-
-#     results = [
-#         {
-#             "review_id": r["_source"].get("review_id"),
-#             "restaurant_name": r["_source"].get("restaurant_name"),
-#             "text": r["_source"].get("text")
-#         }
-#         for r in hits
-#     ]
-
-#     print(f"Found {len(results)} review matches.")
-
-#     # === Bedrock Agent–compliant response ===
-#     return {
-#         "responseBody": {
-#             "application/json": {
-#                 "results": results
-#             }
-#         },
-#         "responseHeaders": {
-#             "Content-Type": "application/json"
-#         },
-#         "statusCode": 200
-#     }
-
-def lambda_handler(event, context):
-    """Lambda entry point for Bedrock Agent Action Group."""
-    print("Event received:", json.dumps(event, default=str))
-
-    # --- Detect Bedrock system validation / health checks ---
-    if isinstance(event, dict) and "actionGroup" in event:
-        print("[DEBUG] Detected Bedrock validation event")
-        print("[DEBUG] Validation OK — returning 200 to unblock alias creation")
-        return {
-            "responseBody": {
-                "application/json": {"message": "Validation OK"}
-            },
-            "responseHeaders": {"Content-Type": "application/json"},
-            "statusCode": 200
-        }
-
-    # --- Extract query safely (supports both 'q' and 'query') ---
+    # Standard body-based formats
     body = {}
     if isinstance(event.get("body"), str):
         try:
@@ -143,33 +58,38 @@ def lambda_handler(event, context):
     elif isinstance(event.get("body"), dict):
         body = event.get("body", {})
 
-    query = (
+    return (
         body.get("query")
         or body.get("q")
         or event.get("query")
         or event.get("q")
     )
 
+
+def lambda_handler(event, context):
+    """Lambda entry point — compatible with both Bedrock Agent action group and direct invocation."""
+    print("[INFO] Event received:", json.dumps(event, default=str))
+
+    # --- Extract query ---
+    query = _extract_query_from_event(event)
+
     if not query:
         print("[WARN] Missing 'query' parameter in request")
         return {
-            "responseBody": {
-                "application/json": {"error": "Missing 'query' parameter"}
-            },
-            "responseHeaders": {"Content-Type": "application/json"},
-            "statusCode": 400
+            "statusCode": 400,
+            "body": json.dumps({"error": "Missing 'query' parameter"})
         }
 
-    print(f"[DEBUG] Processing search query: {query}")
+    print(f"[INFO] Processing search query: {query}")
 
     # --- Generate embedding ---
     emb = get_embedding(query)
 
-    # --- Perform vector search in OpenSearch ---
+    # --- Perform vector search in OpenSearch using `embedding` field ---
     search_payload = {
         "size": 5,
         "query": {"knn": {"embedding": {"vector": emb, "k": 5}}},
-        "_source": ["review_id", "text", "location", "restaurant_name"]
+        "_source": ["review_id", "text", "restaurant_name", "rating"]
     }
 
     resp = requests.post(
@@ -179,8 +99,7 @@ def lambda_handler(event, context):
         data=json.dumps(search_payload)
     )
 
-    print(f"[DEBUG] OpenSearch status: {resp.status_code}")
-    print(f"[DEBUG] OpenSearch response body: {resp.text}")
+    print(f"[INFO] OpenSearch status: {resp.status_code}")
 
     # --- Parse results safely ---
     hits = []
@@ -190,24 +109,40 @@ def lambda_handler(event, context):
     except Exception as e:
         print("[ERROR] Error parsing OpenSearch response:", str(e))
 
-    results = [
-        {
-            "review_id": r["_source"].get("review_id"),
-            "location": r["_source"].get("location") or r["_source"].get("restaurant_name"),
-            "text": r["_source"].get("text")
+    results = []
+    for r in hits:
+        src = r.get("_source", {})
+        results.append({
+            "review_id": src.get("review_id", ""),
+            "restaurant_name": src.get("restaurant_name") or src.get("location") or "Unknown",
+            "rating": float(src.get("rating", 0)),
+            "text": src.get("text", "")
+        })
+
+    print(f"[INFO] Found {len(results)} review matches.")
+
+    # --- Build response (Bedrock Agent action group compatible) ---
+    response_body = json.dumps({"results": results})
+
+    # If this is a Bedrock Agent action group invocation, return agent-compatible format
+    if "actionGroup" in event:
+        return {
+            "messageVersion": "1.0",
+            "response": {
+                "actionGroup": event.get("actionGroup", ""),
+                "apiPath": event.get("apiPath", "/search"),
+                "httpMethod": event.get("httpMethod", "POST"),
+                "httpStatusCode": 200,
+                "responseBody": {
+                    "application/json": {
+                        "body": response_body
+                    }
+                }
+            }
         }
-        for r in hits
-    ]
 
-    print(f"[DEBUG] Found {len(results)} review matches.")
-
-    # === Bedrock Agent–compliant response ===
+    # Direct invocation format
     return {
-        "responseBody": {
-            "application/json": {"results": results}
-        },
-        "responseHeaders": {
-            "Content-Type": "application/json"
-        },
-        "statusCode": 200
+        "statusCode": 200,
+        "body": response_body
     }
