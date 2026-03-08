@@ -51,8 +51,13 @@ resource "aws_opensearch_domain" "this" {
       {
         Effect    = "Allow"
         Principal = { AWS = "*" }
-        Action    = "es:*"
-        Resource  = "arn:aws:es:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:domain/${var.domain_name}/*"
+        Action    = "es:ESHttp*"
+        Resource  = "arn:aws:es:${data.aws_region.current.id}:${data.aws_caller_identity.current.account_id}:domain/${var.domain_name}/*"
+        Condition = {
+          StringEquals = {
+            "aws:PrincipalAccount" = data.aws_caller_identity.current.account_id
+          }
+        }
       }
     ]
   })

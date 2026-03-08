@@ -69,7 +69,6 @@ test_search() {
   aws lambda invoke \
     --function-name "$SEARCH_LAMBDA_NAME" \
     --region "$REGION" \
-    --payload "$(printf '{"query":"%s"}' "$query" | base64)" \
     --cli-binary-format raw-in-base64-out \
     --payload "$(printf '{"query":"%s"}' "$query")" \
     /tmp/tt_search_out.json \

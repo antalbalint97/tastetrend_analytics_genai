@@ -112,10 +112,14 @@ def lambda_handler(event, context):
     results = []
     for r in hits:
         src = r.get("_source", {})
+        try:
+            rating = float(src.get("rating", 0))
+        except (ValueError, TypeError):
+            rating = 0.0
         results.append({
             "review_id": src.get("review_id", ""),
             "restaurant_name": src.get("restaurant_name") or src.get("location") or "Unknown",
-            "rating": float(src.get("rating", 0)),
+            "rating": rating,
             "text": src.get("text", "")
         })
 
