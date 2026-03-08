@@ -298,7 +298,7 @@ def handler(event, context):
 
     total_elapsed = time.time() - start_time
     valid = counters["valid_rows"]
-    success_rate = (counters["indexed_rows"] / valid) if valid > 0 else 1.0
+    success_rate = (counters["indexed_rows"] / valid) if valid > 0 else 0.0
 
     print(f"[PROGRESS] Completed embedding. "
           f"indexed={counters['indexed_rows']}/{valid} valid rows "
