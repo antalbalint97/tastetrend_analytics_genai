@@ -127,12 +127,13 @@ def _bulk_upsert(index_name, docs):
 
 def _iter_csv_rows(
     s3_uri,
+    counters,
     text_col="review_text",
     id_col="review_id",
     location_col="location",
     rating_col="rating_1_5",
 ):
-    """Iterator over rows from an S3 CSV file."""
+    """Iterator over rows from an S3 CSV file. Updates *counters* in place."""
     assert s3_uri.startswith("s3://"), f"Invalid S3 URI: {s3_uri}"
     bucket, key = s3_uri[5:].split("/", 1)
 
@@ -169,14 +170,15 @@ def _iter_csv_rows(
 
     reader = csv.DictReader(io.StringIO(body, newline=""), delimiter=delimiter)
 
-    count = 0
     for row in reader:
+        counters["total_rows_read"] += 1
         try:
             text = str(row.get(text_col, "") or "").strip()
             if not text:
+                counters["skipped_rows"] += 1
                 continue
-            count += 1
             location = str(row.get(location_col, "") or "").strip()
+            counters["valid_rows"] += 1
             yield {
                 "review_id": str(row.get(id_col, "")),
                 "restaurant_name": location if location else "Unknown",
@@ -184,8 +186,59 @@ def _iter_csv_rows(
                 "text": text,
             }
         except Exception as e:
-            print(f"[WARN] Skipping bad row #{count}: {e}")
+            counters["skipped_rows"] += 1
+            print(f"[WARN] Skipping bad row #{counters['total_rows_read']}: {e}")
             continue
+
+
+def _iter_records(records, counters):
+    """Iterator over direct record dicts. Updates *counters* in place."""
+    for rec in records:
+        counters["total_rows_read"] += 1
+        try:
+            text = str(rec.get("text", "") or "").strip()
+            if not text:
+                counters["skipped_rows"] += 1
+                continue
+            counters["valid_rows"] += 1
+            yield {
+                "review_id": str(rec.get("review_id", "")),
+                "restaurant_name": str(rec.get("restaurant_name", "") or "Unknown"),
+                "rating": float(rec.get("rating") or 0.0),
+                "text": text,
+            }
+        except Exception as e:
+            counters["skipped_rows"] += 1
+            print(f"[WARN] Skipping bad record #{counters['total_rows_read']}: {e}")
+            continue
+
+
+def _process_batch(batch, index_name, counters, warnings):
+    """Embed and index a batch of documents. Updates *counters* and *warnings* in place."""
+    batch_size = len(batch)
+
+    # --- Embed ---
+    try:
+        vecs = _embed_batch([d["text"] for d in batch])
+        for d, v in zip(batch, vecs):
+            d["embedding"] = v
+        counters["embedded_rows"] += batch_size
+    except Exception as e:
+        counters["failed_rows"] += batch_size
+        msg = f"Embedding failed for batch of {batch_size}: {e}"
+        print(f"[ERROR] {msg}")
+        warnings.append(msg)
+        return
+
+    # --- Index ---
+    try:
+        _bulk_upsert(index_name, batch)
+        counters["indexed_rows"] += batch_size
+    except Exception as e:
+        counters["failed_rows"] += batch_size
+        msg = f"Indexing failed for batch of {batch_size}: {e}"
+        print(f"[ERROR] {msg}")
+        warnings.append(msg)
 
 
 def handler(event, context):
@@ -198,6 +251,16 @@ def handler(event, context):
     start_time = time.time()
     index_name = event.get("os_index", DEFAULT_IDX)
 
+    counters = {
+        "total_rows_read": 0,
+        "valid_rows": 0,
+        "skipped_rows": 0,
+        "embedded_rows": 0,
+        "indexed_rows": 0,
+        "failed_rows": 0,
+    }
+    warnings = []
+
     try:
         _ensure_index(index_name)
     except Exception as e:
@@ -209,9 +272,9 @@ def handler(event, context):
 
     # Source: S3 CSV or direct records
     if "s3_csv_uri" in event:
-        docs_iter = _iter_csv_rows(event["s3_csv_uri"])
+        docs_iter = _iter_csv_rows(event["s3_csv_uri"], counters)
     elif "records" in event:
-        docs_iter = (r for r in event["records"])
+        docs_iter = _iter_records(event["records"], counters)
     else:
         return {
             "statusCode": 400,
@@ -219,60 +282,43 @@ def handler(event, context):
         }
 
     batch = []
-    ingested = 0
-    errors = []
     for doc in docs_iter:
         batch.append(doc)
         if len(batch) >= BATCH:
-            try:
-                vecs = _embed_batch([d["text"] for d in batch])
-                for d, v in zip(batch, vecs):
-                    d["embedding"] = v
-                _bulk_upsert(index_name, batch)
-                ingested += len(batch)
-            except Exception as e:
-                msg = f"Batch starting at record {ingested}: {e}"
-                print(f"[ERROR] {msg}")
-                errors.append(msg)
+            _process_batch(batch, index_name, counters, warnings)
 
-            if ingested % 500 == 0 and ingested > 0:
+            if counters["indexed_rows"] % 500 == 0 and counters["indexed_rows"] > 0:
                 elapsed = time.time() - start_time
-                print(f"[PROGRESS] Embedded {ingested} records in {elapsed:.1f}s")
+                print(f"[PROGRESS] Indexed {counters['indexed_rows']} records in {elapsed:.1f}s")
 
             batch = []
 
     if batch:
-        try:
-            vecs = _embed_batch([d["text"] for d in batch])
-            for d, v in zip(batch, vecs):
-                d["embedding"] = v
-            _bulk_upsert(index_name, batch)
-            ingested += len(batch)
-        except Exception as e:
-            msg = f"Final batch at record {ingested}: {e}"
-            print(f"[ERROR] {msg}")
-            errors.append(msg)
+        _process_batch(batch, index_name, counters, warnings)
 
     total_elapsed = time.time() - start_time
-    print(f"[PROGRESS] Completed embedding. Total records: {ingested} in {total_elapsed:.1f}s")
+    valid = counters["valid_rows"]
+    success_rate = (counters["indexed_rows"] / valid) if valid > 0 else 1.0
 
-    if errors:
-        print(f"[WARN] {len(errors)} batch error(s) during ingestion")
-        return {
-            "statusCode": 207,
-            "body": json.dumps({
-                "status": "partial",
-                "index": index_name,
-                "ingested": ingested,
-                "errors": errors,
-            }),
-        }
+    print(f"[PROGRESS] Completed embedding. "
+          f"indexed={counters['indexed_rows']}/{valid} valid rows "
+          f"({success_rate:.1%}) in {total_elapsed:.1f}s")
+
+    status = "ok" if counters["failed_rows"] == 0 else "partial"
+    status_code = 200 if counters["failed_rows"] == 0 else 207
 
     return {
-        "statusCode": 200,
+        "statusCode": status_code,
         "body": json.dumps({
-            "status": "ok",
+            "status": status,
             "index": index_name,
-            "ingested": ingested
+            "total_rows_read": counters["total_rows_read"],
+            "valid_rows": counters["valid_rows"],
+            "skipped_rows": counters["skipped_rows"],
+            "embedded_rows": counters["embedded_rows"],
+            "indexed_rows": counters["indexed_rows"],
+            "failed_rows": counters["failed_rows"],
+            "success_rate": round(success_rate, 4),
+            "warnings": warnings,
         }),
     }
