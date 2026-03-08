@@ -18,6 +18,7 @@ resource "aws_lambda_function" "this" {
     variables = {
       OS_ENDPOINT = var.opensearch_endpoint
       OS_INDEX    = var.index_name
+      VECTOR_DIM  = "1024"
     }
   }
 }
