@@ -186,7 +186,7 @@ resource "aws_iam_policy" "proxy_agent_invoke" {
         Sid: "AllowInvokeBedrockAgent",
         Effect: "Allow",
         Action: [
-          "bedrock-agent:InvokeAgent",
+          "bedrock:InvokeAgent",
           "bedrock-agent-runtime:InvokeAgent"
         ],
         Resource: [

@@ -83,7 +83,10 @@ resource "aws_iam_policy" "proxy_policy" {
           "bedrock:InvokeAgent",
           "bedrock-agent-runtime:InvokeAgent"
         ],
-        Resource = "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.me.account_id}:agent/*"
+        Resource = [
+          "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.me.account_id}:agent/*",
+          "arn:aws:bedrock:${data.aws_region.current.id}:${data.aws_caller_identity.me.account_id}:agent-alias/*"
+        ]
       },
       {
         Sid    = "AllowCloudWatchLogs",
