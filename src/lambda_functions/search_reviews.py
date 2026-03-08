@@ -199,21 +199,21 @@ def lambda_handler(event, context):
     warning = None
 
     if location:
-        print("[DEBUG] Using filtered (location-aware) retrieval")
+        print("[DEBUG] Using filtered KNN retrieval")
         payload = _build_knn_payload(emb, location=location)
         _, hits = _execute_search(payload)
 
         if not hits:
-            print("[WARN] Filtered search returned 0 hits — falling back to unfiltered semantic search")
+            print("[WARN] Filtered KNN returned 0 hits — falling back to unfiltered KNN")
             warning = (
                 f"No results for location '{location}'. "
-                "Falling back to unfiltered semantic search."
+                "Falling back to unfiltered KNN search."
             )
             payload = _build_knn_payload(emb, location=None)
             _, hits = _execute_search(payload)
-            print("[DEBUG] Fallback unfiltered retrieval used")
+            print("[DEBUG] Fallback unfiltered KNN retrieval used")
     else:
-        print("[DEBUG] Using unfiltered semantic retrieval")
+        print("[DEBUG] Using unfiltered KNN retrieval")
         payload = _build_knn_payload(emb, location=None)
         _, hits = _execute_search(payload)
 
