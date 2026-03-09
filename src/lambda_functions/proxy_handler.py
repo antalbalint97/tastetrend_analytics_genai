@@ -112,6 +112,7 @@ def handler(event, context):
             agentAliasId=AGENT_ALIAS,
             sessionId=conv_id,
             inputText=user_query,
+            enableTrace=True,
         )
 
         output_text = ""

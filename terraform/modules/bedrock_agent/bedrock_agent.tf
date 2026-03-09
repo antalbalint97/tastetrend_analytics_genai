@@ -50,6 +50,6 @@ resource "aws_lambda_permission" "allow_bedrock_invoke_search" {
 #############################################
 resource "aws_bedrockagent_agent_alias" "default" {
   agent_id         = aws_bedrockagent_agent.agent.id
-  agent_alias_name = "live-v5"
+  agent_alias_name = "live"
   description      = "Live alias for the TasteTrend demo"
 }
