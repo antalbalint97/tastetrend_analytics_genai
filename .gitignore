@@ -37,6 +37,7 @@ venv/
 crash.log
 *.auto.tfvars
 *.tfvars
+!terraform/terraform.tfvars
 *.tfstate.*
 
 # ----------------
