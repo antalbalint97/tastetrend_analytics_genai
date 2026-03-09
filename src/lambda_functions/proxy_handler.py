@@ -128,20 +128,37 @@ def handler(event, context):
                         decoded = text_bytes.decode("utf-8", errors="ignore")
                         output_text += decoded
 
+                # Debug logging for trace events
+                if "trace" in evt:
+                    event_keys = list(evt.keys())
+                    print(f"[TRACE] Event keys: {event_keys}")
+                    print(f"[TRACE] Full trace: {json.dumps(evt.get('trace', {}), default=str)[:500]}")
+
                 # Handle trace events to extract tool results
-                trace = evt.get("trace", {}).get("trace", {})
-                orchestration = trace.get("orchestrationTrace", {})
-                observation = orchestration.get("observation", {})
-                action_group_output = observation.get("actionGroupInvocationOutput", {})
+                # Use `or {}` to guard against keys that exist with None values
+                trace_data = (evt.get("trace") or {}).get("trace") or {}
+                orchestration = trace_data.get("orchestrationTrace") or {}
+                observation = orchestration.get("observation") or {}
+                action_group_output = observation.get("actionGroupInvocationOutput") or {}
                 if action_group_output:
                     tool_text = action_group_output.get("text", "")
                     if tool_text:
+                        print(f"[TRACE] actionGroupInvocationOutput text: {tool_text[:300]}")
                         try:
                             tool_data = json.loads(tool_text)
+                            # Direct format: {"results": [...]}
                             if isinstance(tool_data.get("results"), list):
                                 results = tool_data["results"]
-                        except (json.JSONDecodeError, TypeError):
-                            pass
+                            # Bedrock action group response wrapper format
+                            elif "response" in tool_data:
+                                resp_body = (tool_data.get("response") or {}).get("responseBody") or {}
+                                body_str = (resp_body.get("application/json") or {}).get("body", "")
+                                if body_str:
+                                    inner = json.loads(body_str)
+                                    if isinstance(inner.get("results"), list):
+                                        results = inner["results"]
+                        except (json.JSONDecodeError, TypeError) as e:
+                            print(f"[WARN] Failed to parse tool output ({e}): {tool_text[:200]}")
         else:
             output_text = str(response)
 
