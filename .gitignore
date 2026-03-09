@@ -113,6 +113,14 @@ bedrock_events.json
 .env
 opensearch/
 
+# ----------------
+# Node / Vercel
+# ----------------
+node_modules/
+.env.local
+package-lock.json
+.vercel
+
 # Ignore local Lambda source code (old/unused paths)
 terraform/modules/lambda/search_reviews/
 terraform/modules/lambda/opensearch/
