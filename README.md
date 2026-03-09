@@ -5,33 +5,52 @@ A Proof-of-Concept RAG (Retrieval-Augmented Generation) pipeline for restaurant 
 ## Architecture
 
 ```
-Frontend → API Gateway (POST /query) → Proxy Lambda → Bedrock Agent → Search Lambda → OpenSearch
+ETL Lambda ──► S3 (processed CSV)
+                   │
+           Embedding Lambda ──► OpenSearch (vector index)
+                                       │
+Vercel Frontend ──► API Gateway ──► Proxy Lambda ──► Bedrock Agent ──► Search Lambda ──► OpenSearch
 ```
 
-**Key components:**
-- **API Gateway** — single public `POST /query` endpoint
-- **Proxy Lambda** — authenticates requests, invokes Bedrock Agent, returns structured JSON
-- **Bedrock Agent** (Claude 3 Sonnet) — orchestrates tool use and generates grounded answers
-- **Search Lambda** — performs vector similarity search against OpenSearch
-- **OpenSearch** (managed domain) — stores review embeddings indexed by the Embedding Lambda
-- **Embedding Lambda** — reads processed CSV from S3 and indexes Titan v2 embeddings
+**Full stack:**
 
-## Quick Start
+| Layer | Component | Details |
+|-------|-----------|---------|
+| **Data ingestion** | ETL Lambda | Cleans raw review data, writes processed CSV to S3 |
+| **Embedding** | Embedding Lambda | Reads CSV from S3, generates Titan v2 (1024-dim) vectors, indexes into OpenSearch |
+| **Vector store** | OpenSearch (managed, t3.small.search) | Stores review embeddings; KNN search with optional location filter |
+| **Orchestration** | Bedrock Agent | Claude 3 Haiku (`anthropic.claude-3-haiku-20240307-v1:0`) with action group for search |
+| **Proxy** | Proxy Lambda | Authenticates API key, invokes Bedrock Agent, returns structured JSON |
+| **API** | API Gateway | Single public `POST /query` endpoint |
+| **Frontend** | Vercel (separate repo) | Next.js app calling the API Gateway endpoint |
 
-See **[DEPLOY.md](DEPLOY.md)** for full deployment and testing instructions.
+**Agent alias:** `PKAKGJIGJF` (live-haiku → Version 5)
+
+## Deployment
+
+### 1. Build & upload Lambda packages
 
 ```bash
-# Deploy infrastructure
-cd terraform && terraform init && terraform apply
-
-# Index embeddings
-aws lambda invoke --function-name tastetrend-poc-embedding \
-  --cli-binary-format raw-in-base64-out \
-  --payload '{"s3_csv_uri":"s3://BUCKET/processed/processed_final.csv","os_index":"reviews"}' /tmp/out.json
-
-# Test the endpoint
-./scripts/test_backend.sh api "What do customers complain about?"
+./deployment_pipeline_bash.sh        # builds zips, uploads to S3
 ```
+
+### 2. Apply infrastructure
+
+```bash
+cd terraform
+terraform init
+terraform apply                      # uses terraform.tfvars
+```
+
+### Required environment variables (Terraform / Lambda)
+
+| Variable | Description |
+|----------|-------------|
+| `AGENT_ID` | Bedrock Agent ID (output of `terraform apply`) |
+| `AGENT_ALIAS` | Bedrock Agent Alias ID (see alias documented above) |
+| `API_KEY_HASH` | SHA-256 hash of the API key used by the frontend |
+
+See **[DEPLOY.md](DEPLOY.md)** for full deployment and validation instructions.
 
 ## Project Structure
 
@@ -39,6 +58,7 @@ aws lambda invoke --function-name tastetrend-poc-embedding \
 |------|-------------|
 | `terraform/` | Infrastructure as Code (Terraform modules) |
 | `src/lambda_functions/` | Lambda handlers (ETL, Embedding, Search, Proxy) |
+| `deployment_pipeline_bash.sh` | Builds Lambda zips and uploads to S3 |
 | `scripts/test_backend.sh` | Backend verification script |
 | `DEPLOY.md` | Deployment & validation guide |
 | `docs/` | Architecture and design docs |

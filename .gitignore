@@ -53,6 +53,7 @@ crash.log
 # ----------------
 payload.json
 response.json
+proxy_response.json
 *.local.json
 
 # ----------------
@@ -110,14 +111,13 @@ alias_config.json
 bootstrap_ingest.sh
 srcipts/
 bedrock_events.json
-.env
+.env*
 opensearch/
 
 # ----------------
 # Node / Vercel
 # ----------------
 node_modules/
-.env.local
 package-lock.json
 .vercel
 
