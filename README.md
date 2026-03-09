@@ -69,13 +69,11 @@ Vercel Frontend → API GW → Proxy Lambda → Bedrock Agent (Haiku) → Search
 
 ### OpenSearch Managed
 
-| Criterion | OpenSearch Managed | 
-|---|---|---|---|
-| Native KNN support | ✅ HNSW via `knn_vector` 
-| AWS-native auth | ✅ IAM SigV4 
-| PoC cost | ~$30/mo (t3.small)
-| Terraform support | ✅ `aws_opensearch_domain`
-| Metadata filtering | ✅ term queries + KNN
+Native KNN support | ✅ HNSW via `knn_vector` 
+AWS-native auth | ✅ IAM SigV4 
+PoC cost | ~$30/mo (t3.small)
+Terraform support | ✅ `aws_opensearch_domain`
+Metadata filtering | ✅ term queries + KNN
 
 **Decision:** OpenSearch Managed was selected because it provides native KNN with HNSW, first-class Terraform support, IAM-based access control, and the lowest cost for a single-node PoC.
 
