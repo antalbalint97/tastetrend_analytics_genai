@@ -7,7 +7,7 @@ data "aws_caller_identity" "me" {}
 resource "aws_bedrockagent_agent" "agent" {
   agent_name                  = var.agent_name
   description                 = "TasteTrend GenAI Agent — analyses restaurant reviews using RAG"
-  foundation_model            = "arn:aws:bedrock:${data.aws_region.current.id}::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0"
+  foundation_model            = "arn:aws:bedrock:${data.aws_region.current.id}::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0"
   instruction                 = file("${path.module}/instructions.txt")
   idle_session_ttl_in_seconds = 600
   agent_resource_role_arn     = var.role_arn
