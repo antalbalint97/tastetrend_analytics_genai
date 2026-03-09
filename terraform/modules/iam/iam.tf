@@ -247,3 +247,36 @@ resource "aws_iam_role_policy_attachment" "bedrock_agent_attach" {
   role       = aws_iam_role.bedrock_agent_role.name
   policy_arn = aws_iam_policy.bedrock_agent_policy.arn
 }
+
+resource "aws_iam_role_policy" "bedrock_agent_model_policy" {
+  name = "bedrock-agent-model-access"
+  role = aws_iam_role.bedrock_agent_role.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeModel",
+          "bedrock:InvokeModelWithResponseStream"
+        ]
+        Resource = [
+          "arn:aws:bedrock:eu-central-1::foundation-model/anthropic.claude-3-5-sonnet-20240620-v1:0",
+          "arn:aws:bedrock:eu-central-1::foundation-model/anthropic.claude-3-7-sonnet-20250219-v1:0",
+          "arn:aws:bedrock:eu-central-1::foundation-model/anthropic.claude-3-haiku-20240307-v1:0"
+        ]
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "bedrock:InvokeAgent"
+        ]
+        Resource = [
+          "arn:aws:bedrock:eu-central-1:550744777598:agent/IVEGCZX9LV",
+          "arn:aws:bedrock:eu-central-1:550744777598:agent-alias/IVEGCZX9LV/NMBODVUPUR"
+        ]
+      }
+    ]
+  })
+}
