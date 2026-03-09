@@ -77,7 +77,7 @@ Vercel Frontend → API GW → Proxy Lambda → Bedrock Agent (Haiku) → Search
 | Terraform support | ✅ `aws_opensearch_domain` | ✅ `aws_rds_cluster` | ❌ no official provider |
 | Metadata filtering | ✅ term queries + KNN | ✅ SQL WHERE + vector | ✅ built-in |
 
-**Decision:** OpenSearch Managed was selected because it provides native KNN with HNSW, first-class Terraform support, IAM-based access control, and the lowest cost for a single-node PoC. Aurora pgvector was considered but adds RDS operational overhead; Pinecone was rejected because it introduces an external dependency outside the AWS boundary.
+**Decision:** OpenSearch Managed was selected because it provides native KNN with HNSW, first-class Terraform support, IAM-based access control, and the lowest cost for a single-node PoC.
 
 ### Bedrock Agent vs Direct Lambda RAG
 
