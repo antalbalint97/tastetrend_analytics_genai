@@ -22,10 +22,10 @@ resource "aws_bedrockagent_agent" "agent" {
 # Action Group — Search Reviews
 #############################################
 resource "aws_bedrockagent_agent_action_group" "search" {
-  agent_id                   = aws_bedrockagent_agent.agent.id
-  agent_version              = "DRAFT"
-  action_group_name          = "search_reviews"
-  description                = "Searches restaurant reviews by semantic similarity"
+  agent_id          = aws_bedrockagent_agent.agent.id
+  agent_version     = "DRAFT"
+  action_group_name = "search_reviews"
+  description       = "Searches restaurant reviews by semantic similarity"
   action_group_executor {
     lambda = var.search_lambda_arn
   }
@@ -46,10 +46,23 @@ resource "aws_lambda_permission" "allow_bedrock_invoke_search" {
 }
 
 #############################################
-# Agent Alias (publishes current DRAFT)
+# Agent Version (snapshots current DRAFT)
+#############################################
+resource "aws_bedrockagent_agent_version" "current" {
+  agent_id                   = aws_bedrockagent_agent.agent.agent_id
+  description                = "Version 3 - Claude 3.5 Sonnet"
+  skip_resource_in_use_check = false
+}
+
+#############################################
+# Agent Alias (points to the latest version)
 #############################################
 resource "aws_bedrockagent_agent_alias" "default" {
   agent_id         = aws_bedrockagent_agent.agent.id
   agent_alias_name = "live"
   description      = "Live alias for the TasteTrend demo"
+
+  routing_configuration {
+    agent_version = aws_bedrockagent_agent_version.current.version
+  }
 }
