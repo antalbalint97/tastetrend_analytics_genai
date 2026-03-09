@@ -1,0 +1,27 @@
+{
+  "name": "tastetrend_analytics_genai",
+  "version": "1.0.0",
+  "description": "A Proof-of-Concept RAG (Retrieval-Augmented Generation) pipeline for restaurant review analytics, built on AWS.",
+  "main": "index.js",
+  "directories": {
+    "doc": "docs"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/antalbalint97/tastetrend_analytics_genai.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/antalbalint97/tastetrend_analytics_genai/issues"
+  },
+  "homepage": "https://github.com/antalbalint97/tastetrend_analytics_genai#readme",
+  "devDependencies": {
+    "@vercel/node": "^5.6.11"
+  }
+}
