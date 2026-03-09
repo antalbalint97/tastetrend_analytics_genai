@@ -1,82 +1,84 @@
-# AWS Cost Estimate — TasteTrend GenAI PoC
+# AWS Cost Estimation — TasteTrend Analytics GenAI
 
-## Assumptions
-
-- **Region:** eu-central-1 (Frankfurt)
-- **PoC usage:** 1–2 developers, ~50 queries/day during active development, data re-indexed weekly
-- **MVP scale (100 DAU):** ~100 daily active users, ~10 queries per user/day = ~1,000 queries/day (~30,000/month)
-- **Pricing as of 2024-Q4** (AWS public pricing; actual costs may vary)
+> **Methodology:** Costs estimated using the AWS Pricing Calculator (EU Frankfurt / eu-central-1 region).  
+> Workload estimate ID: `f4e9d7a8-03f5-40a4-bebb-bdcd7da2e94f`  
+> Rates as of: March 2026, Before Discount.
 
 ---
 
-## Monthly Cost Breakdown
+## PoC Monthly Cost Breakdown
 
-| Service | Configuration (PoC) | Est. Monthly Cost (PoC) | Configuration (100 DAU MVP) | Est. Monthly Cost (MVP) |
-|---|---|---|---|---|
-| **OpenSearch** | `t3.small.search` × 1 node, 20 GiB gp3 EBS | **$27.00** | `m5.large.search` × 2 nodes (Multi-AZ), 50 GiB gp3 | **$220.00** |
-| **Lambda — ETL** | ~4 invocations/month, 3008 MB, 60s avg duration | **$0.02** | ~30 invocations/month (scheduled) | **$0.15** |
-| **Lambda — Embedding** | ~4 invocations/month, 3008 MB, 300s avg duration | **$0.06** | ~30 invocations/month | **$0.50** |
-| **Lambda — Search** | ~1,500 invocations/month, 512 MB, 2s avg duration | **$0.04** | ~30,000 invocations/month | **$0.80** |
-| **Lambda — Proxy** | ~1,500 invocations/month, 128 MB, 3s avg duration | **$0.02** | ~30,000 invocations/month | **$0.50** |
-| **Bedrock — Claude 3 Haiku** | ~1,500 calls/month, ~500 input + 300 output tokens/call | **$0.75** | ~30,000 calls/month | **$15.00** |
-| **Bedrock — Titan Embed v2** | ~2,000 embeddings/month (re-index) + ~1,500 query embeds | **$0.04** | ~30,000 query embeds + 5,000 index embeds/month | **$0.35** |
-| **API Gateway (HTTP)** | ~1,500 requests/month | **$0.002** | ~30,000 requests/month | **$0.03** |
-| **S3** | 3 buckets, <1 GiB total, ~5,000 requests/month | **$0.10** | 3 buckets, ~5 GiB, ~50,000 requests/month | **$0.50** |
-| **KMS** | 1 CMK + ~3,000 API calls/month | **$1.03** | 1 CMK + ~60,000 API calls/month | **$1.18** |
-| **CloudWatch Logs** | ~500 MB ingested/month | **$0.25** | ~5 GiB ingested/month | **$2.50** |
-| **Data Transfer** | Minimal (same-region) | **$0.00** | ~10 GiB out/month | **$0.90** |
-| | | | | |
-| **Total (estimated)** | | **~$29** | | **~$242** |
-
----
-
-## Cost Notes
-
-### OpenSearch (largest cost driver)
-
-- The PoC uses a single `t3.small.search` node ($0.036/hr × 730 hrs ≈ $26.28).
-- No reserved instances — on-demand pricing only.
-- For MVP, a Multi-AZ deployment with `m5.large.search` ($0.146/hr × 2 nodes) is recommended for availability.
-- **Cost optimisation:** Consider reserved instances (1-year commitment) for ~40% savings at production scale.
-
-### Bedrock — Claude 3 Haiku
-
-- Input: $0.00025 / 1K tokens → ~500 tokens/query → $0.000125/query
-- Output: $0.00125 / 1K tokens → ~300 tokens/query → $0.000375/query
-- Total per query: ~$0.0005
-- **1,500 queries/month (PoC):** ~$0.75
-- **30,000 queries/month (MVP):** ~$15.00
-- If upgrading to **Sonnet** ($0.003/$0.015 per 1K tokens), expect ~12× the Haiku cost → ~$180/month at MVP scale.
-
-### Bedrock — Titan Embed Text v2
-
-- $0.0001 / 1K tokens → ~100 tokens per review or query
-- Extremely cheap: even at 30K embeddings/month → $0.30
-
-### Lambda
-
-- Lambda is effectively free at PoC scale.
-- At MVP scale (30K invocations/month), the cost is dominated by the free tier (400,000 GB-s/month).
-- The ETL and Embedding Lambdas use the `AWSSDKPandas` layer — no additional cost.
-
-### API Gateway
-
-- HTTP API pricing: $1.00 per million requests.
-- At 30K requests/month, cost is negligible ($0.03).
-
-### KMS
-
-- $1.00/month per customer-managed key (CMK).
-- API calls: $0.03 per 10,000 requests.
-
----
-
-## Cost Optimisation Opportunities (MVP → Production)
-
-| Opportunity | Estimated Savings | Effort |
+| Service | Configuration | Monthly Cost (USD) |
 |---|---|---|
-| OpenSearch Reserved Instances (1-year) | ~40% on OpenSearch | Low (commitment) |
-| Provisioned Throughput for Bedrock (if available) | Up to 30% on model calls | Medium |
-| S3 Intelligent-Tiering for processed data | Negligible at current scale | Low |
-| Lambda ARM64 (Graviton) architecture | ~20% on Lambda compute | Low (rebuild ZIPs) |
-| Move frontend to CloudFront + S3 (eliminate Vercel) | Saves Vercel Pro costs | Medium |
+| Amazon OpenSearch Service | t3.small.search, 1 node, 744 hrs | $31.25 |
+| AWS KMS | 1 CMK + 1,000 symmetric API calls | $1.00 |
+| AWS Lambda | 500 requests × 8s × 128MB | $0.01 |
+| Amazon S3 | 1 GB storage + 1,000 PUT + 5,000 GET | $0.03 |
+| Amazon API Gateway | HTTP API, 500 requests | $0.00 |
+| **AWS subtotal** | | **$32.29** |
+| Amazon Bedrock (Claude 3 Haiku)* | 500K input tokens + 100K output tokens | $0.80 |
+| Vercel (Frontend hosting) | Hobby plan | $0.00 |
+| **Total PoC estimate** | | **~$33/month** |
+
+*Bedrock is not available in the AWS Pricing Calculator. Manually calculated:
+- Input: 500,000 tokens × $0.80/1M = **$0.40**
+- Output: 100,000 tokens × $4.00/1M = **$0.40**
+- **Bedrock total: ~$0.80/month** at PoC usage levels
+
+---
+
+## Key Cost Driver
+
+**OpenSearch (t3.small.search) represents ~95% of total cost** at PoC scale.  
+This is expected — a dedicated search cluster has a fixed hourly cost regardless of query volume.  
+At PoC scale (< 100 queries/day), this is the main trade-off vs. a serverless alternative.
+
+---
+
+## Scaling to MVP: 100 Daily Active Users
+
+Assumptions:
+- 100 DAU × 5 queries/day = **~15,000 queries/month**
+- Avg 1,500 input tokens + 300 output tokens per query
+- OpenSearch scaled to `m5.large.search` (2 nodes, multi-AZ)
+
+| Service | PoC Config | PoC Cost | MVP Config | MVP Est. Cost |
+|---|---|---|---|---|
+| OpenSearch | t3.small, 1 node | $31.25 | m5.large, 2 nodes (multi-AZ) | ~$280 |
+| AWS Lambda | 500 req/month | $0.01 | 15,000 req/month | ~$0.50 |
+| API Gateway | 500 req/month | $0.00 | 15,000 req/month | ~$0.02 |
+| S3 | 1 GB | $0.03 | 10 GB | ~$0.25 |
+| KMS | 1 CMK | $1.00 | 1 CMK | $1.00 |
+| Bedrock (Haiku) | ~600K tokens | $0.80 | ~27M tokens | ~$25 |
+| Cognito (Auth) | — | — | 100 MAU (free tier) | $0.00 |
+| CloudWatch | Basic | ~$0 | Logs + Alarms | ~$5 |
+| **Total** | | **~$33/month** | | **~$312/month** |
+
+---
+
+## Cost Optimization Opportunities
+
+**Short term (PoC → MVP):**
+- Replace OpenSearch `t3.small` with **OpenSearch Serverless** for infrequent workloads — pay per OCU-hour instead of always-on instance
+- Use **Claude 3 Haiku** over Sonnet — 10× cheaper with acceptable quality for structured review queries (already implemented)
+- Enable **Lambda reserved concurrency** to prevent runaway costs
+
+**Medium term (MVP → Production):**
+- Evaluate **Aurora pgvector** as OpenSearch replacement if query patterns are simple — significantly cheaper at scale
+- Implement **response caching** at API Gateway level for repeated queries
+- Use **Bedrock Provisioned Throughput** if query volume exceeds 1M tokens/month for predictable pricing
+
+---
+
+## AWS Free Tier Impact
+
+The following services have free tier coverage that reduces PoC costs further:
+
+| Service | Free Tier |
+|---|---|
+| AWS Lambda | 1M requests + 400,000 GB-seconds/month |
+| Amazon API Gateway | 1M HTTP API calls/month (first 12 months) |
+| Amazon S3 | 5 GB storage + 20,000 GET + 2,000 PUT (first 12 months) |
+
+> At PoC usage levels, Lambda and API Gateway costs are effectively **$0.00** due to free tier coverage.  
+> The real cost of running this PoC is the **OpenSearch instance + KMS key = ~$32.25/month**.

@@ -5,128 +5,129 @@ Document infrastructure, deployment, and operational decisions for the TasteTren
 **Scope:**  
 Covers the AWS Lambda configuration, S3 architecture, IAM design, versioning, and roadmap for scaling beyond the MVP phase.
 
-
 ---
 
 ## AWS Lambda Setup
-- **Runtime:** Python 3.11  
-- **Handler:** `api_handler.lambda_handler`  
-- **Memory:** 1024 MB (chosen for pandas performance headroom).  
-- **Timeout:** 30s (sufficient for processing single review files; subject to increase if needed).  
-- **Ephemeral Storage:** `/tmp` directory used for staging raw + processed files during execution.  
+- **Runtime:** Python 3.11
+- **Handler:** `lambda_functions.etl_handler.handler`
+- **Memory:** 128 MB (sufficient for pandas-based CSV processing at PoC data volumes)
+- **Timeout:** 60s (sufficient for processing single review files)
+- **Ephemeral Storage:** `/tmp` directory used for staging raw + processed files during execution
 
 **Trade-offs:**
-- ✅ Serverless, no infrastructure to maintain.  
-- ✅ Cheap for POC workloads.  
-- ❌ Hard runtime limits (15 min, /tmp size, memory).  
-- **Mitigation:** Batch processing not supported in MVP; future: consider step functions or container-based approach if limits reached.
+- ✅ Serverless, no infrastructure to maintain.
+- ✅ Cheap for PoC workloads.
+- ❌ Hard runtime limits (15 min, /tmp size, memory).
+- **Mitigation:** Batch processing not supported in PoC; future: consider Step Functions or container-based approach if limits reached.
 
 ### Execution Flow
-1. S3 event (or manual trigger) invokes Lambda.  
-2. Lambda downloads the raw file from `raw` bucket into `/tmp`.  
-3. Local transformation and validation performed (pandas-based).  
-4. Processed dataset + logs uploaded to `processed` bucket.  
+1. Manual trigger (Lambda console or `deployment_pipeline_bash.sh`) invokes ETL Lambda.
+2. Lambda reads raw review CSV files from the `raw` S3 bucket.
+3. Local transformation and validation performed (pandas-based).
+4. Processed dataset (parquet) + validation logs uploaded to `processed` S3 bucket.
 5. Optional: bias and validation summaries generated under `processed/logs/`.
 
+---
+
 ## Observability & Logging
-- **Logs:** All execution logs stored in CloudWatch (`/aws/lambda/tastetrend-dev-etl`).  
-- **Validation reports:** Written as JSON (`validation_<timestamp>.json`) to the processed bucket.  
+- **Logs:** All execution logs stored in CloudWatch (`/aws/lambda/tastetrend-poc-etl`).
+- **Validation reports:** Written as JSON (`validation_<timestamp>.json`) to the processed bucket.
 - **Metrics:** Basic success/failure counters tracked in CloudWatch; future versions will emit custom metrics (e.g., number of rows processed, validation failures).
 
 ---
 
 ## AWS SDK (boto3)
-- Chosen over AWS CLI calls inside Lambda for **programmatic control**.  
+- Chosen over AWS CLI calls inside Lambda for **programmatic control**.
 - Used for:
-  - `download_file` → get raw file from S3 into `/tmp`.  
-  - `upload_file` → push processed parquet into processed bucket.  
+  - `download_file` → get raw file from S3 into `/tmp`.
+  - `upload_file` → push processed parquet into processed bucket.
 
 ---
 
 ## Deployment Strategy
-- **Current:**  
-  - Source packaged as `.zip` and uploaded to the **artifacts bucket**.  
-  - Lambda updated via `aws lambda update-function-code`.  
-  - Versions tracked manually with suffixes (`etl-0.4.zip`, `etl-0.5.zip`, …).  
+- **Current:**
+  - All Lambda functions are packaged together as a single `.zip` using `deployment_pipeline_bash.sh`.
+  - The script installs Python dependencies into `tmp/`, copies `src/` on top, and produces versioned ZIPs (`etl-<VERSION>.zip`, `proxy-<VERSION>.zip`, etc.).
+  - ZIPs are uploaded to the artifacts S3 bucket and deployed via `terraform apply -var="lambda_version=<VERSION>"`.
+  - Lambda environment variables are managed separately via AWS CLI to avoid Terraform overwriting manually set values (see `lifecycle { ignore_changes = [environment] }` in proxy module).
 
-- **Rejected:**  
-  - Docker container packaging → dropped after experimentation, as `.zip` packaging was simpler and sufficient for Python+pandas with AWS SDK Pandas layer.  
+- **Rejected:**
+  - Docker container packaging → dropped after experimentation; `.zip` packaging was simpler and sufficient for Python + pandas with the AWS SDK Pandas layer.
+  - Separate ZIP per Lambda → all functions share one package for PoC simplicity; trade-off is larger deployment artifact (~8.7 MB).
 
-- **Future:**  
-  - Automate ZIP versioning & deployment with IaC pipeline (Terraform / CDK).  
+- **Future:**
+  - Automate ZIP versioning & deployment with a CI/CD pipeline (GitHub Actions).
   - Enable Lambda versions/aliases for production vs dev promotion.
+  - Separate per-function packages to reduce cold start times.
 
 ---
 
 ## IAM Design
-- **Lambda execution role:** `tastetrend-dev-etl-role`  
-  - Permissions:  
-    - Read from `tastetrend-dev-raw-<account_id>`  
-    - Write to `tastetrend-dev-processed-<account_id>`  
-    - Read/write to `tastetrend-dev-artifacts-<account_id>`  
+- **Lambda execution role:** `tt-etl-lambda-role`
+  - Permissions:
+    - Read from `tastetrend-poc-raw-<account_id>`
+    - Write to `tastetrend-poc-processed-<account_id>`
+    - Read/write to `tastetrend-poc-artifacts-<account_id>`
   - Limited to S3 + CloudWatch logging for principle of least privilege.
 
-- **Trade-offs:**  
-  - ✅ Clear separation of buckets + roles = easier auditing.  
-  - ❌ Slightly more verbose IAM policy.  
-  - **Mitigation:** Scoped policies attached only to Lambda role.
+- **Trade-offs:**
+  - ✅ Clear separation of buckets + roles = easier auditing.
+  - ❌ Slightly more verbose IAM policy.
+  - **Mitigation:** Scoped policies attached only to the Lambda role.
 
 ### Security & Compliance
-- Principle of least privilege enforced at the bucket-level resource ARNs.  
-- No cross-account access permitted in dev.  
-- Environment variables used for credentials only in dev; will be replaced by **AWS Secrets Manager** in production.  
-- CloudTrail auditing enabled for S3 and Lambda API calls.
+- Principle of least privilege enforced at the bucket-level resource ARNs.
+- No cross-account access permitted.
+- All S3 buckets have public access blocked and server-side encryption enabled (KMS).
+- CloudWatch logging enabled for all Lambda functions.
 
 ---
 
 ## S3 Buckets
-- **Artifacts** (`tastetrend-dev-artifacts-<account_id>`)  
-  Stores Lambda deployment ZIPs and dependency layers.  
 
-- **Raw** (`tastetrend-dev-raw-<account_id>`)  
-  Ingested unprocessed files.  
+| Bucket | Purpose |
+|--------|---------|
+| `tastetrend-poc-raw-<account_id>` | Ingested unprocessed CSV review files |
+| `tastetrend-poc-processed-<account_id>` | Output parquet files generated by ETL |
+| `tastetrend-poc-artifacts-<account_id>` | Lambda deployment ZIPs |
 
-- **Processed** (`tastetrend-dev-processed-<account_id>`)  
-  Output parquet files generated by ETL.  
-
-**Trade-offs:**  
-- ✅ Follows data lake best practices (raw → processed → curated).  
-- ✅ Debuggable: can inspect raw and processed independently.  
-- ❌ More buckets to manage.  
-- **Mitigation:** Standardized naming and tagging.  
+**Trade-offs:**
+- ✅ Follows data lake best practices (raw → processed → artifacts).
+- ✅ Debuggable: raw and processed can be inspected independently.
+- ❌ More buckets to manage.
+- **Mitigation:** Standardized naming and Terraform-managed lifecycle.
 
 ---
 
 ## Versioning Strategy
-- **Lambda code:** versioned via S3 object name suffix (`etl-0.7.zip`).  
-- **Data outputs:** processed parquet stored under `processed/processed_<filename>.parquet`.  
-- **Trade-offs:**  
-  - ✅ Simple manual tracking for POC.  
-  - ❌ Lacks automated rollback and alias support.  
-  - **Future:** Use Lambda versions + aliases, and S3 versioning enabled on buckets for production.  
+- **Lambda code:** versioned via deployment script argument (`bash deployment_pipeline_bash.sh 6.7`), producing `proxy-6.7.zip`, `etl-6.7.zip`, etc.
+- **Data outputs:** processed parquet stored under `processed/processed_<filename>.parquet`.
+- **Trade-offs:**
+  - ✅ Simple manual tracking for PoC.
+  - ❌ Lacks automated rollback and alias support.
+  - **Future:** Use Lambda versions + aliases, and S3 object versioning for production.
 
 ---
 
 ## IaC (Infrastructure as Code)
-- **Modules:** Each bucket and Lambda defined as a Terraform module.  
-- **Locals:** Standard naming pattern `tastetrend-dev-*`.  
-- **Future expansion:**  
-  - Add CI/CD pipeline for Lambda packaging and deployment.  
-  - Add monitoring via CloudWatch metrics & alarms.  
-  - Introduce Step Functions for batch orchestration.  
+- **Modules:** Each bucket, IAM role, and Lambda defined as a Terraform module under `terraform/modules/`.
+- **State:** Terraform state managed locally for PoC (`.terraform/` gitignored).
+- **Future expansion:**
+  - Remote state in S3 + DynamoDB locking for team collaboration.
+  - Add CI/CD pipeline for Lambda packaging and deployment.
+  - Add monitoring via CloudWatch metrics and alarms.
+  - Introduce Step Functions for batch orchestration.
 
 ---
 
 ## Future MVP Roadmap
-- **Batch ETL:** Multi-file S3 triggers (Step Functions).  
-- **CI/CD:** Automated packaging, validation, and deployment.  
-- **Automated QA:** Integrate schema and bias validation before promotion.  
-- **Promotion flow:** Dev → Staging → Prod via Lambda aliases.  
-- **RAG integration:** Stream processed review data to the embedding generator for the GenAI retrieval layer.  
+- **Batch ETL:** Multi-file S3 event triggers (EventBridge + Step Functions).
+- **CI/CD:** GitHub Actions for automated packaging, validation, and deployment.
+- **Automated QA:** Integrate schema and bias validation before promotion.
+- **Promotion flow:** Dev → Staging → Prod via Lambda aliases.
 - **Scaling:** Container-based Lambda or ECS task if pandas workloads exceed current limits.
-
 
 ---
 
-✅ This document captures **infrastructure and deployment decisions**.  
-Schema and transformation details are recorded separately in **`data_exploration.md`**.
+✅ This document captures **infrastructure and deployment decisions** for the ETL pipeline.  
+Schema and transformation details are recorded separately in **`data_integrity.md`**.
