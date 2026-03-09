@@ -46,23 +46,10 @@ resource "aws_lambda_permission" "allow_bedrock_invoke_search" {
 }
 
 #############################################
-# Agent Version (snapshots current DRAFT)
-#############################################
-resource "aws_bedrockagent_agent_version" "current" {
-  agent_id                   = aws_bedrockagent_agent.agent.agent_id
-  description                = "Version 3 - Claude 3.5 Sonnet"
-  skip_resource_in_use_check = false
-}
-
-#############################################
 # Agent Alias (points to the latest version)
 #############################################
 resource "aws_bedrockagent_agent_alias" "default" {
   agent_id         = aws_bedrockagent_agent.agent.id
   agent_alias_name = "live"
   description      = "Live alias for the TasteTrend demo"
-
-  routing_configuration {
-    agent_version = aws_bedrockagent_agent_version.current.version
-  }
 }
